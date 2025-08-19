@@ -4,7 +4,7 @@
   --foreground: #4b170b;
   --primary: #b38478;
   --secondary: #d1c6c8c0;
-  --muted: #f8fafc;
+  --muted: #fcfaf8;
   --border: #a0817dad;
   --destructive: #c5ad88;
   --success: #ada38b;
@@ -243,7 +243,6 @@ body {
   opacity: 0.7;
 }
 
-/* Level Selectors - Como en la imagen */
 .level-selectors {
   display: flex;
   align-items: center;
@@ -374,7 +373,7 @@ body {
 }
 
 .material-count.complete {
-  background: #dcfce7;
+  background: #fcf2dc;
   border-color: var(--success);
   color: var(--success);
 }

@@ -4,726 +4,579 @@ let currentFilter = 'all';
 let draggedElement = null;
 let editingItemId = null;
 
-// Default materials templates 
-const DEFAULT_MATERIALS = {
-  ascension: {
-    character: {
-      4: [
-        { name: 'Character EXP Material', required: 171, image: '', obtained: 0 },
-        { name: 'Elemental Gem', required: 46, image: '', obtained: 0 },
-        { name: 'Local Specialty', required: 168, image: '', obtained: 0 },
-        { name: 'Common Enemy Drop', required: 18, image: '', obtained: 0 }
-      ],
-      5: [
-        { name: 'Character EXP Material', required: 171, image: '', obtained: 0 },
-        { name: 'Elemental Gem', required: 46, image: '', obtained: 0 },
-        { name: 'Local Specialty', required: 168, image: '', obtained: 0 },
-        { name: 'Common Enemy Drop', required: 18, image: '', obtained: 0 },
-        { name: 'Boss Material', required: 46, image: '', obtained: 0 }
-      ]
-    },
-    weapon: {
-      4: [
-        { name: 'Weapon EXP Material', required: 605, image: '', obtained: 0 },
-        { name: 'Weapon Ascension Material', required: 15, image: '', obtained: 0 },
-        { name: 'Common Enemy Drop', required: 23, image: '', obtained: 0 }
-      ],
-      5: [
-        { name: 'Weapon EXP Material', required: 605, image: '', obtained: 0 },
-        { name: 'Weapon Ascension Material', required: 15, image: '', obtained: 0 },
-        { name: 'Elite Enemy Drop', required: 23, image: '', obtained: 0 },
-        { name: 'Weekly Boss Material', required: 6, image: '', obtained: 0 }
-      ]
-    }
+// Material catalog data - This will be expanded later
+const materialCatalog = [
+  {
+    id: 'slime-condensate',
+    name: 'Slime Condensate',
+    image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ddd" width="100" height="100" rx="10"/><circle fill="%2398FB98" cx="50" cy="50" r="30"/><text y="55" x="50" text-anchor="middle" fill="%23333" font-size="12">Slime</text></svg>',
+    category: 'common'
   },
-  talent: [
-    { name: 'Talent Book', required: 114, image: '', obtained: 0 },
-    { name: 'Common Enemy Drop', required: 18, image: '', obtained: 0 },
-    { name: 'Weekly Boss Material', required: 18, image: '', obtained: 0 },
-    { name: 'Crown of Insight', required: 3, image: '', obtained: 0 }
-  ]
-};
+  {
+    id: 'slime-secretions',
+    name: 'Slime Secretions',
+    image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ddd" width="100" height="100" rx="10"/><circle fill="%2398FB98" cx="50" cy="50" r="25"/><text y="55" x="50" text-anchor="middle" fill="%23333" font-size="10">Secret</text></svg>',
+    category: 'uncommon'
+  },
+  {
+    id: 'slime-concentrate',
+    name: 'Slime Concentrate',
+    image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ddd" width="100" height="100" rx="10"/><circle fill="%2398FB98" cx="50" cy="50" r="20"/><text y="55" x="50" text-anchor="middle" fill="%23333" font-size="8">Conc</text></svg>',
+    category: 'rare'
+  }
+];
 
-// Initialize app
+// DOM Ready
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('DOM loaded, initializing app...');
   initializeApp();
 });
 
+// Initialize application
 function initializeApp() {
-  loadFromLocalStorage();
-  renderMaterials();
+  loadMaterialItems();
   setupEventListeners();
-  setupDragAndDrop();
-  setupFileInput();
-  updateItemCounts();
-  console.log('App initialized successfully');
+  populateLevelSelectors();
+  renderMaterialItems();
 }
 
-// Load and save data
-function loadFromLocalStorage() {
-  const saved = localStorage.getItem('materialItems');
-  if (saved) {
-    try {
-      materialItems = JSON.parse(saved);
-      console.log('Data loaded from localStorage');
-    } catch (error) {
-      console.error('Error loading from localStorage:', error);
-      materialItems = [];
+// Populate level selectors with values 1-90
+function populateLevelSelectors() {
+  const currentLevelSelect = document.getElementById('currentLevel');
+  const targetLevelSelect = document.getElementById('targetLevel');
+  
+  if (currentLevelSelect && targetLevelSelect) {
+    // Clear existing options
+    currentLevelSelect.innerHTML = '';
+    targetLevelSelect.innerHTML = '';
+    
+    // Add level options 1-90
+    for (let i = 1; i <= 90; i++) {
+      const currentOption = document.createElement('option');
+      currentOption.value = i.toString();
+      currentOption.textContent = i.toString();
+      currentLevelSelect.appendChild(currentOption);
+      
+      const targetOption = document.createElement('option');
+      targetOption.value = i.toString();
+      targetOption.textContent = i.toString();
+      targetLevelSelect.appendChild(targetOption);
     }
-  } else {
-    materialItems = [];
+    
+    // Set default values
+    currentLevelSelect.value = '1';
+    targetLevelSelect.value = '90';
   }
 }
 
-function saveToLocalStorage() {
-  try {
-    localStorage.setItem('materialItems', JSON.stringify(materialItems));
-    console.log('Data saved to localStorage');
-  } catch (error) {
-    console.error('Error saving to localStorage:', error);
-  }
-}
-
-// File input setup
-function setupFileInput() {
-  const fileInput = document.getElementById('imageFile');
-  const fileLabel = document.querySelector('.file-input-label');
-  const filePreview = document.getElementById('filePreview');
-  const previewImage = document.getElementById('previewImage');
-  const fileName = document.getElementById('fileName');
-
-  if (fileInput) {
-    fileInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (file) {
-        if (!file.type.startsWith('image/')) {
-          alert('Please select a valid image file (JPG, PNG, SVG, etc.)');
-          fileInput.value = '';
-          return;
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-          alert('Image size should be less than 5MB');
-          fileInput.value = '';
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          previewImage.src = e.target.result;
-          fileName.textContent = file.name;
-          filePreview.style.display = 'block';
-          fileLabel.classList.add('has-file');
-          fileLabel.innerHTML = '<span>📷 Change Image</span>';
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-  }
-}
-
-// Event listeners
+// Event Listeners
 function setupEventListeners() {
+  // Add button
+  document.getElementById('addButton').addEventListener('click', openAddModal);
+
   // Filter buttons
-  document.querySelectorAll('.btn-filter').forEach(btn => {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      currentFilter = this.dataset.filter;
-      renderMaterials();
+  document.querySelectorAll('.btn-filter').forEach(button => {
+    button.addEventListener('click', function() {
+      setFilter(this.dataset.filter);
     });
   });
 
-  // Add button
-  const addButton = document.getElementById('addButton');
-  if (addButton) {
-    addButton.addEventListener('click', function() {
-      showAddModal();
-    });
+  // Form submissions
+  document.getElementById('addForm').addEventListener('submit', handleAddItem);
+  document.getElementById('customMaterialForm').addEventListener('submit', handleAddCustomMaterial);
+
+  // Modal controls
+  document.getElementById('cancelButton').addEventListener('click', closeModal);
+  document.getElementById('cancelMaterialsButton').addEventListener('click', closeMaterialsModal);
+  document.getElementById('cancelCustomMaterialButton').addEventListener('click', closeCustomMaterialModal);
+  
+  // Catalog controls
+  const closeCatalogButton = document.getElementById('closeCatalogButton');
+  if (closeCatalogButton) {
+    closeCatalogButton.addEventListener('click', closeCatalogModal);
+  }
+  
+  const addFromCatalogButton = document.getElementById('addFromCatalogButton');
+  if (addFromCatalogButton) {
+    addFromCatalogButton.addEventListener('click', openCatalogModal);
   }
 
-  // Modal events
-  setupModalEvents();
+  // Material management buttons
+  document.getElementById('addMaterialButton').addEventListener('click', openCustomMaterialModal);
+  document.getElementById('saveMaterialsButton').addEventListener('click', saveMaterials);
 
-  // Type change event for showing/hiding element selector and material options
-  const typeSelect = document.getElementById('itemType');
-  const elementSelect = document.getElementById('itemElement');
-  const levelSelector = document.getElementById('levelSelector');
-  const talentMaterialsLabel = document.getElementById('talentMaterialsLabel');
+  // Item type change handler
+  document.getElementById('itemType').addEventListener('change', handleTypeChange);
 
-  if (typeSelect) {
-    typeSelect.addEventListener('change', function() {
-      if (this.value === 'character') {
-        elementSelect.style.display = 'block';
-        elementSelect.required = true;
-        levelSelector.style.display = 'block';
-        talentMaterialsLabel.style.display = 'block';
-      } else if (this.value === 'weapon') {
-        elementSelect.style.display = 'none';
-        elementSelect.required = false;
-        levelSelector.style.display = 'block';
-        talentMaterialsLabel.style.display = 'none';
-        document.getElementById('talentMaterials').checked = false;
-      } else {
-        elementSelect.style.display = 'none';
-        levelSelector.style.display = 'none';
-        talentMaterialsLabel.style.display = 'none';
-      }
-    });
-  }
-}
+  // File upload previews
+  document.getElementById('imageFile').addEventListener('change', handleFilePreview);
+  document.getElementById('customMaterialImage').addEventListener('change', handleCustomMaterialFilePreview);
 
-function setupModalEvents() {
-  const modal = document.getElementById('addModal');
-  const form = document.getElementById('addForm');
-  const cancelBtn = document.getElementById('cancelButton');
-  const editMaterialsModal = document.getElementById('editMaterialsModal');
-  const saveMaterialsBtn = document.getElementById('saveMaterialsButton');
-  const cancelMaterialsBtn = document.getElementById('cancelMaterialsButton');
-
-  // Cancel button
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', hideAddModal);
-  }
-
-  // Close modal when clicking outside
-  if (modal) {
+  // Modal background click to close
+  document.querySelectorAll('.modal').forEach(modal => {
     modal.addEventListener('click', function(e) {
       if (e.target === modal) {
-        hideAddModal();
+        modal.classList.remove('show');
       }
     });
-  }
-
-  if (editMaterialsModal) {
-    editMaterialsModal.addEventListener('click', function(e) {
-      if (e.target === editMaterialsModal) {
-        hideEditMaterialsModal();
-      }
-    });
-  }
-
-  // Form submission
-  if (form) {
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const formData = new FormData(form);
-      const fileInput = document.getElementById('imageFile');
-      const previewImage = document.getElementById('previewImage');
-      
-      const itemData = {
-        name: formData.get('name').trim(),
-        type: formData.get('type'),
-        rarity: parseInt(formData.get('rarity')),
-        element: formData.get('element') || null,
-        imageUrl: fileInput.files[0] ? previewImage.src : getDefaultImage(formData.get('type')),
-        notes: formData.get('notes').trim(),
-        currentLevel: formData.get('currentLevel') ? parseInt(formData.get('currentLevel')) : 1,
-        targetLevel: formData.get('targetLevel') ? parseInt(formData.get('targetLevel')) : 90,
-        includeAscension: formData.get('ascensionMaterials') === 'on',
-        includeTalent: formData.get('talentMaterials') === 'on'
-      };
-      
-      if (itemData.name && itemData.type && itemData.rarity) {
-        if (editingItemId) {
-          updateItem(itemData);
-        } else {
-          addItem(itemData);
-        }
-        hideAddModal();
-        resetForm();
-      } else {
-        alert('Please fill in all required fields (Name, Type, Rarity)');
-      }
-    });
-  }
-
-  // Materials editor events
-  if (saveMaterialsBtn) {
-    saveMaterialsBtn.addEventListener('click', saveMaterialsChanges);
-  }
-
-  if (cancelMaterialsBtn) {
-    cancelMaterialsBtn.addEventListener('click', hideEditMaterialsModal);
-  }
-}
-
-function getDefaultImage(type) {
-  if (type === 'character') {
-    return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle fill="%23e5a6b2" cx="50" cy="50" r="40"/><text y="60" x="50" text-anchor="middle" fill="white" font-size="30">👤</text></svg>';
-  } else {
-    return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e5a6b2" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="white" font-size="30">⚔️</text></svg>';
-  }
-}
-
-// Modal functions
-function showAddModal(itemId = null) {
-  const modal = document.getElementById('addModal');
-  const modalTitle = document.getElementById('modalTitle');
-  const submitButton = document.getElementById('submitButton');
-
-  if (itemId) {
-    editingItemId = itemId;
-    const item = materialItems.find(item => item.id === itemId);
-    if (item) {
-      modalTitle.textContent = 'Edit Item';
-      submitButton.textContent = 'Update Item';
-      populateForm(item);
-    }
-  } else {
-    editingItemId = null;
-    modalTitle.textContent = 'Add New Item';
-    submitButton.textContent = 'Add Item';
-    resetForm();
-  }
-
-  modal.classList.add('show');
-}
-
-function hideAddModal() {
-  const modal = document.getElementById('addModal');
-  modal.classList.remove('show');
-  editingItemId = null;
-}
-
-function populateForm(item) {
-  document.getElementById('itemName').value = item.name;
-  document.getElementById('itemType').value = item.type;
-  document.getElementById('itemRarity').value = item.rarity;
-  document.getElementById('itemElement').value = item.element || '';
-  document.getElementById('itemNotes').value = item.notes || '';
-  document.getElementById('currentLevel').value = item.currentLevel || 1;
-  document.getElementById('targetLevel').value = item.targetLevel || 90;
-  document.getElementById('ascensionMaterials').checked = item.includeAscension !== false;
-  document.getElementById('talentMaterials').checked = item.includeTalent || false;
-
-  // Trigger type change event to show/hide fields
-  const typeEvent = new Event('change');
-  document.getElementById('itemType').dispatchEvent(typeEvent);
-
-  // Handle image
-  if (item.imageUrl && !item.imageUrl.startsWith('data:image/svg+xml')) {
-    const previewImage = document.getElementById('previewImage');
-    const fileName = document.getElementById('fileName');
-    const filePreview = document.getElementById('filePreview');
-    const fileLabel = document.querySelector('.file-input-label');
-
-    previewImage.src = item.imageUrl;
-    fileName.textContent = 'Current image';
-    filePreview.style.display = 'block';
-    fileLabel.classList.add('has-file');
-    fileLabel.innerHTML = '<span>📷 Change Image</span>';
-  }
-}
-
-function resetForm() {
-  const form = document.getElementById('addForm');
-  const fileInput = document.getElementById('imageFile');
-  const fileLabel = document.querySelector('.file-input-label');
-  const filePreview = document.getElementById('filePreview');
-
-  form.reset();
-  if (fileInput) fileInput.value = '';
-  if (filePreview) filePreview.style.display = 'none';
-  if (fileLabel) {
-    fileLabel.classList.remove('has-file');
-    fileLabel.innerHTML = '<span>📷 Choose Image (JPG, PNG, SVG...)</span>';
-  }
-
-  // Hide optional fields
-  document.getElementById('itemElement').style.display = 'none';
-  document.getElementById('levelSelector').style.display = 'none';
-  document.getElementById('talentMaterialsLabel').style.display = 'none';
-}
-
-// Materials editor modal
-function showEditMaterialsModal(itemId) {
-  const modal = document.getElementById('editMaterialsModal');
-  const item = materialItems.find(item => item.id === itemId);
-  
-  if (!item) return;
-
-  editingItemId = itemId;
-  renderMaterialsEditor(item);
-  modal.classList.add('show');
-}
-
-function hideEditMaterialsModal() {
-  const modal = document.getElementById('editMaterialsModal');
-  modal.classList.remove('show');
-  editingItemId = null;
-}
-
-function renderMaterialsEditor(item) {
-  const container = document.getElementById('materialsEditor');
-  container.innerHTML = '';
-
-  const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-
-  allMaterials.forEach((material, index) => {
-    const div = document.createElement('div');
-    div.className = 'material-editor-item';
-    
-    div.innerHTML = `
-      <div class="material-editor-image-container">
-        <img src="${material.image || getDefaultMaterialImage()}" alt="${material.name}" class="material-editor-image" />
-        <input type="file" id="matImg_${index}" accept="image/*" style="display: none;" onchange="updateMaterialImage('${item.id}', ${index}, this)" />
-        <button type="button" class="btn-change-image" onclick="document.getElementById('matImg_${index}').click()">📷</button>
-      </div>
-      <div class="material-editor-info">
-        <input type="text" value="${material.name}" class="material-editor-name-input" 
-               onchange="updateMaterialName('${item.id}', ${index}, this.value)" placeholder="Material name" />
-        <div class="material-editor-controls">
-          <div class="material-counter">
-            <button type="button" class="counter-btn" onclick="updateMaterialCount('${item.id}', ${index}, -1)">-</button>
-            <input type="number" value="${material.obtained || 0}" min="0" max="9999" class="counter-input" 
-                   onchange="setMaterialCount('${item.id}', ${index}, this.value)" />
-            <button type="button" class="counter-btn" onclick="updateMaterialCount('${item.id}', ${index}, 1)">+</button>
-          </div>
-          <span class="required-amount">/ ${material.required}</span>
-          <input type="number" value="${material.required}" min="1" max="9999" class="required-input" 
-                 onchange="updateMaterialRequired('${item.id}', ${index}, this.value)" placeholder="Required" />
-        </div>
-      </div>
-    `;
-    
-    container.appendChild(div);
   });
 }
 
-function getDefaultMaterialImage() {
-  return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ddd" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23666" font-size="16">MAT</text></svg>';
+// Local Storage
+function saveMaterialItems() {
+  localStorage.setItem('materialItems', JSON.stringify(materialItems));
 }
 
-function updateMaterialImage(itemId, materialIndex, input) {
-  if (!input.files[0]) return;
+function loadMaterialItems() {
+  const stored = localStorage.getItem('materialItems');
+  materialItems = stored ? JSON.parse(stored) : [];
+}
+
+// Modal Management
+function openAddModal() {
+  document.getElementById('addModal').classList.add('show');
+  document.getElementById('modalTitle').textContent = 'Add New Item';
+  document.getElementById('addForm').reset();
+  document.getElementById('filePreview').style.display = 'none';
+  populateLevelSelectors(); // Repopulate on each open
+  editingItemId = null;
+}
+
+function closeModal() {
+  document.getElementById('addModal').classList.remove('show');
+}
+
+function openMaterialsModal(itemId) {
+  editingItemId = itemId;
+  const item = materialItems.find(i => i.id === itemId);
+  if (!item) return;
+
+  document.getElementById('editMaterialsModal').classList.add('show');
+  renderCurrentMaterials(item.materials || []);
+}
+
+function closeMaterialsModal() {
+  document.getElementById('editMaterialsModal').classList.remove('show');
+  editingItemId = null;
+}
+
+function openCustomMaterialModal() {
+  document.getElementById('addCustomMaterialModal').classList.add('show');
+  document.getElementById('customMaterialForm').reset();
+  document.getElementById('customMaterialPreview').style.display = 'none';
+}
+
+function closeCustomMaterialModal() {
+  document.getElementById('addCustomMaterialModal').classList.remove('show');
+}
+
+function openCatalogModal() {
+  document.getElementById('materialCatalogModal').classList.add('show');
+  renderCatalog();
+}
+
+function closeCatalogModal() {
+  document.getElementById('materialCatalogModal').classList.remove('show');
+}
+
+// Catalog Functions
+function renderCatalog() {
+  const catalogGrid = document.getElementById('catalogGrid');
+  if (!catalogGrid) return;
   
-  const file = input.files[0];
-  if (!file.type.startsWith('image/')) {
-    alert('Please select a valid image file');
+  catalogGrid.innerHTML = '';
+  
+  if (materialCatalog.length === 0) {
+    catalogGrid.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem; grid-column: 1 / -1;">Catalog is being updated. More materials coming soon!</p>';
     return;
   }
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const item = materialItems.find(item => item.id === itemId);
-    if (!item) return;
-
-    const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-    if (materialIndex >= 0 && materialIndex < allMaterials.length) {
-      allMaterials[materialIndex].image = e.target.result;
-      renderMaterialsEditor(item);
-    }
-  };
-  reader.readAsDataURL(file);
+  
+  materialCatalog.forEach(material => {
+    const div = document.createElement('div');
+    div.className = 'catalog-item';
+    div.innerHTML = `
+      <img src="${material.image}" alt="${material.name}" class="catalog-image" />
+      <div class="catalog-name">${material.name}</div>
+      <button class="btn-catalog-add" onclick="addMaterialFromCatalog('${material.id}')">Add</button>
+    `;
+    catalogGrid.appendChild(div);
+  });
 }
 
-function updateMaterialName(itemId, materialIndex, name) {
-  const item = materialItems.find(item => item.id === itemId);
-  if (!item) return;
-
-  const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-  if (materialIndex >= 0 && materialIndex < allMaterials.length) {
-    allMaterials[materialIndex].name = name;
-  }
-}
-
-function updateMaterialRequired(itemId, materialIndex, required) {
-  const item = materialItems.find(item => item.id === itemId);
-  if (!item) return;
-
-  const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-  if (materialIndex >= 0 && materialIndex < allMaterials.length) {
-    allMaterials[materialIndex].required = Math.max(1, parseInt(required) || 1);
-  }
-}
-
-function updateMaterialCount(itemId, materialIndex, change) {
-  const item = materialItems.find(item => item.id === itemId);
-  if (!item) return;
-
-  const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-  if (materialIndex >= 0 && materialIndex < allMaterials.length) {
-    const material = allMaterials[materialIndex];
-    const newValue = Math.max(0, Math.min(9999, (material.obtained || 0) + change));
-    material.obtained = newValue;
-    
-    renderMaterialsEditor(item);
-  }
-}
-
-function setMaterialCount(itemId, materialIndex, value) {
-  const item = materialItems.find(item => item.id === itemId);
-  if (!item) return;
-
-  const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-  if (materialIndex >= 0 && materialIndex < allMaterials.length) {
-    const material = allMaterials[materialIndex];
-    material.obtained = Math.max(0, Math.min(9999, parseInt(value) || 0));
-  }
-}
-
-function saveMaterialsChanges() {
-  saveToLocalStorage();
-  renderMaterials();
-  hideEditMaterialsModal();
-}
-
-// CRUD operations
-function addItem(itemData) {
-  const newItem = {
+function addMaterialFromCatalog(materialId) {
+  if (!editingItemId) return;
+  
+  const catalogMaterial = materialCatalog.find(m => m.id === materialId);
+  if (!catalogMaterial) return;
+  
+  const material = {
     id: Date.now().toString(),
-    ...itemData,
-    completed: false,
-    priority: materialItems.filter(item => !item.completed).length + 1,
-    ascensionMaterials: itemData.includeAscension ? generateMaterials('ascension', itemData.type, itemData.rarity) : [],
-    talentMaterials: itemData.includeTalent && itemData.type === 'character' ? generateMaterials('talent') : []
+    name: catalogMaterial.name,
+    required: 1,
+    obtained: 0,
+    image: catalogMaterial.image
   };
   
-  materialItems.push(newItem);
-  renderMaterials();
-  updateItemCounts();
-  saveToLocalStorage();
+  addMaterialToItem(material);
+  closeCatalogModal();
 }
 
-function updateItem(itemData) {
-  const item = materialItems.find(item => item.id === editingItemId);
-  if (item) {
-    Object.assign(item, itemData);
-    
-    // Regenerate materials if type or rarity changed
-    if (itemData.includeAscension) {
-      item.ascensionMaterials = generateMaterials('ascension', itemData.type, itemData.rarity);
-    } else {
-      item.ascensionMaterials = [];
-    }
-    
-    if (itemData.includeTalent && itemData.type === 'character') {
-      item.talentMaterials = generateMaterials('talent');
-    } else {
-      item.talentMaterials = [];
-    }
-    
-    renderMaterials();
-    updateItemCounts();
-    saveToLocalStorage();
-  }
-}
-
-function generateMaterials(type, itemType = null, rarity = null) {
-  if (type === 'ascension' && itemType && rarity) {
-    return DEFAULT_MATERIALS.ascension[itemType][rarity].map(mat => ({...mat}));
-  } else if (type === 'talent') {
-    return DEFAULT_MATERIALS.talent.map(mat => ({...mat}));
-  }
-  return [];
-}
-
-function deleteItem(id) {
-  const item = materialItems.find(item => item.id === id);
-  const itemName = item ? item.name : 'this item';
-  
-  if (confirm(`Are you sure you want to delete "${itemName}"?`)) {
-    materialItems = materialItems.filter(item => item.id !== id);
-    // Reorder priorities
-    const inProgressItems = materialItems.filter(item => !item.completed);
-    const completedItems = materialItems.filter(item => item.completed);
-    
-    inProgressItems.forEach((item, index) => {
-      item.priority = index + 1;
-    });
-    
-    completedItems.forEach((item, index) => {
-      item.priority = index + 1;
-    });
-    
-    renderMaterials();
-    updateItemCounts();
-    saveToLocalStorage();
-  }
-}
-
-function toggleCompleted(id, completed) {
-  const item = materialItems.find(item => item.id === id);
-  if (item) {
-    item.completed = completed;
-    
-    // Reorder priorities
-    const inProgressItems = materialItems.filter(item => !item.completed);
-    const completedItems = materialItems.filter(item => item.completed);
-    
-    if (completed) {
-      item.priority = completedItems.length;
-    } else {
-      item.priority = inProgressItems.length + 1;
-    }
-    
-    inProgressItems.forEach((item, index) => {
-      item.priority = index + 1;
-    });
-    
-    completedItems.forEach((item, index) => {
-      item.priority = index + 1;
-    });
-    
-    renderMaterials();
-    updateItemCounts();
-    saveToLocalStorage();
-  }
-}
-
-// Rendering functions
-function renderMaterials() {
-  const inProgressContainer = document.getElementById('inProgressContainer');
-  const completedContainer = document.getElementById('completedContainer');
-  
-  const filteredItems = getFilteredItems();
-  const inProgressItems = filteredItems.filter(item => !item.completed);
-  const completedItems = filteredItems.filter(item => item.completed);
-  
-  renderSection(inProgressContainer, inProgressItems, 'in-progress');
-  renderSection(completedContainer, completedItems, 'completed');
-  
-  updateItemCounts();
-}
-
-function renderSection(container, items, sectionType) {
+// Material Functions
+function renderCurrentMaterials(materials) {
+  const container = document.getElementById('currentMaterialsList');
   if (!container) return;
   
   container.innerHTML = '';
   
-  if (items.length === 0) {
-    const message = sectionType === 'in-progress' ? 
-      'No items in progress' : 'No completed items';
-    const subMessage = sectionType === 'in-progress' ? 
-      'Add your first character or weapon to get started!' : 
-      'Mark items as completed to see them here.';
-    
-    container.innerHTML = `
-      <div class="empty-state">
-        <h3>${message}</h3>
-        <p>${subMessage}</p>
-        ${sectionType === 'in-progress' && currentFilter === 'all' ? 
-          '<button class="btn-primary" onclick="showAddModal()">Add your first item</button>' : ''}
-      </div>
-    `;
+  if (materials.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">No materials added yet. Click "Add Custom Material" or "Add from Catalog" to get started.</p>';
     return;
   }
   
-  items.forEach(item => {
-    const itemElement = createMaterialItemElement(item);
-    container.appendChild(itemElement);
+  materials.forEach(material => {
+    const div = document.createElement('div');
+    div.className = 'current-material-item';
+    div.innerHTML = `
+      <img src="${material.image || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ddd" width="100" height="100" rx="10"/><text y="55" x="50" text-anchor="middle" fill="%23999" font-size="30">?</text></svg>'}" alt="${material.name}" class="material-image" />
+      <div class="material-details">
+        <div class="material-name">${material.name}</div>
+        <div class="material-inputs">
+          <input type="number" value="${material.obtained}" onchange="updateMaterialProgress('${material.id}', 'obtained', this.value)" min="0" />
+          /
+          <input type="number" value="${material.required}" onchange="updateMaterialProgress('${material.id}', 'required', this.value)" min="1" />
+        </div>
+      </div>
+      <button class="btn-delete" onclick="removeMaterial('${material.id}')">×</button>
+    `;
+    container.appendChild(div);
   });
 }
 
-function getFilteredItems() {
-  return materialItems.filter(item => {
-    switch (currentFilter) {
-      case 'character-4':
-        return item.type === 'character' && item.rarity === 4;
-      case 'character-5':
-        return item.type === 'character' && item.rarity === 5;
-      case 'weapon-4':
-        return item.type === 'weapon' && item.rarity === 4;
-      case 'weapon-5':
-        return item.type === 'weapon' && item.rarity === 5;
-      case 'pyro':
-      case 'hydro':
-      case 'dendro':
-      case 'geo':
-      case 'cryo':
-      case 'anemo':
-      case 'electro':
-        return item.element === currentFilter;
-      case 'in-progress':
-        return !item.completed;
-      case 'completed':
-        return item.completed;
-      default:
-        return true;
-    }
-  }).sort((a, b) => a.priority - b.priority);
+function updateMaterialProgress(materialId, field, value) {
+  if (!editingItemId) return;
+  
+  const item = materialItems.find(i => i.id === editingItemId);
+  if (!item || !item.materials) return;
+  
+  const material = item.materials.find(m => m.id === materialId);
+  if (material) {
+    material[field] = parseInt(value) || 0;
+    saveMaterialItems();
+    renderMaterialItems();
+  }
 }
 
-function createMaterialItemElement(item) {
-  const div = document.createElement('div');
-  div.className = `material-item${item.completed ? ' completed' : ''}`;
-  div.draggable = true;
-  div.dataset.id = item.id;
+function removeMaterial(materialId) {
+  if (!editingItemId) return;
   
-  const stars = '★'.repeat(item.rarity);
-  const typeIcon = item.type === 'character' ? '' : '';
+  const item = materialItems.find(i => i.id === editingItemId);
+  if (!item || !item.materials) return;
   
-  const imageHtml = item.imageUrl ? 
-    `<img src="${item.imageUrl}" alt="${item.name}" class="item-image" onerror="this.style.display='none'" />` : 
-    `<div class="item-image" style="display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">${typeIcon}</div>`;
+  item.materials = item.materials.filter(m => m.id !== materialId);
+  saveMaterialItems();
+  renderCurrentMaterials(item.materials);
+}
+
+function saveMaterials() {
+  saveMaterialItems();
+  renderMaterialItems();
+  closeMaterialsModal();
+}
+
+// Form Handlers
+function handleTypeChange() {
+  const type = document.getElementById('itemType').value;
+  const elementSelect = document.getElementById('itemElement');
+  const levelSelector = document.getElementById('levelSelector');
   
-  const elementHtml = item.element ? 
-    `<span class="item-element ${item.element}">${getElementEmoji(item.element)} ${item.element.charAt(0).toUpperCase() + item.element.slice(1)}</span>` : '';
+  if (type === 'character') {
+    elementSelect.style.display = 'block';
+    elementSelect.required = true;
+    levelSelector.style.display = 'block';
+  } else {
+    elementSelect.style.display = 'none';
+    elementSelect.required = false;
+    levelSelector.style.display = type === 'weapon' ? 'block' : 'none';
+  }
+}
+
+function handleFilePreview() {
+  const file = this.files[0];
+  const preview = document.getElementById('filePreview');
+  const image = document.getElementById('previewImage');
+  const fileName = document.getElementById('fileName');
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      image.src = e.target.result;
+      fileName.textContent = file.name;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+function handleCustomMaterialFilePreview() {
+  const file = this.files[0];
+  const preview = document.getElementById('customMaterialPreview');
+  const image = document.getElementById('customPreviewImage');
+  const fileName = document.getElementById('customFileName');
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      image.src = e.target.result;
+      fileName.textContent = file.name;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+function handleAddItem(e) {
+  e.preventDefault();
   
-  const levelHtml = item.type && (item.ascensionMaterials?.length > 0 || item.talentMaterials?.length > 0) ? 
-    `<div class="level-selectors">
-      <select class="level-select" onchange="updateItemLevel('${item.id}', 'currentLevel', this.value)">
-        ${[1, 20, 40, 50, 60, 70, 80, 90].map(level => 
-          `<option value="${level}" ${level === (item.currentLevel || 1) ? 'selected' : ''}>${level}</option>`
-        ).join('')}
-      </select>
-      <span class="level-arrow">→</span>
-      <select class="level-select" onchange="updateItemLevel('${item.id}', 'targetLevel', this.value)">
-        ${[20, 40, 50, 60, 70, 80, 90].map(level => 
-          `<option value="${level}" ${level === (item.targetLevel || 90) ? 'selected' : ''}>${level}</option>`
-        ).join('')}
-      </select>
-    </div>` : '';
+  const formData = new FormData(e.target);
+  const imageFile = formData.get('imageFile');
   
-  const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-  const materialsHtml = allMaterials.length > 0 ? allMaterials.map(material => {
-    const progress = material.obtained || 0;
-    const total = material.required || 1;
-    const isComplete = progress >= total;
+  const item = {
+    id: editingItemId || Date.now().toString(),
+    name: formData.get('name'),
+    type: formData.get('type'),
+    rarity: formData.get('rarity'),
+    element: formData.get('element') || null,
+    materialType: formData.get('materialType'),
+    currentLevel: formData.get('currentLevel') || '1',
+    targetLevel: formData.get('targetLevel') || '90',
+    notes: formData.get('notes'),
+    completed: false,
+    materials: editingItemId ? materialItems.find(i => i.id === editingItemId)?.materials || [] : [],
+    image: null
+  };
+
+  if (imageFile && imageFile.size > 0) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      item.image = e.target.result;
+      saveItem(item);
+    };
+    reader.readAsDataURL(imageFile);
+  } else {
+    // Si estamos editando, mantener la imagen anterior
+    if (editingItemId) {
+      const existingItem = materialItems.find(i => i.id === editingItemId);
+      if (existingItem) {
+        item.image = existingItem.image;
+      }
+    }
+    saveItem(item);
+  }
+}
+
+function saveItem(item) {
+  if (editingItemId) {
+    const index = materialItems.findIndex(i => i.id === editingItemId);
+    if (index !== -1) {
+      materialItems[index] = { ...materialItems[index], ...item };
+    }
+  } else {
+    materialItems.push(item);
+  }
+  
+  saveMaterialItems();
+  renderMaterialItems();
+  closeModal();
+}
+
+function handleAddCustomMaterial(e) {
+  e.preventDefault();
+  
+  if (!editingItemId) return;
+  
+  const formData = new FormData(e.target);
+  const imageFile = formData.get('customMaterialImage');
+  
+  const material = {
+    id: Date.now().toString(),
+    name: formData.get('customMaterialName'),
+    required: parseInt(formData.get('customMaterialRequired')) || 1,
+    obtained: parseInt(formData.get('customMaterialObtained')) || 0,
+    image: null
+  };
+
+  if (imageFile && imageFile.size > 0) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      material.image = e.target.result;
+      addMaterialToItem(material);
+    };
+    reader.readAsDataURL(imageFile);
+  } else {
+    addMaterialToItem(material);
+  }
+}
+
+function addMaterialToItem(material) {
+  const item = materialItems.find(i => i.id === editingItemId);
+  if (item) {
+    if (!item.materials) item.materials = [];
+    item.materials.push(material);
+    saveMaterialItems();
+    renderCurrentMaterials(item.materials);
+  }
+  
+  closeCustomMaterialModal();
+}
+
+// Utility function to capitalize text
+function capitalizeWords(str) {
+  return str.replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// Filter Management
+function setFilter(filter) {
+  currentFilter = filter;
+  
+  // Update active button
+  document.querySelectorAll('.btn-filter').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  const activeButton = document.querySelector(`[data-filter="${filter}"]`);
+  if (activeButton) {
+    activeButton.classList.add('active');
+  }
+  
+  renderMaterialItems();
+}
+
+function filterItems(items) {
+  return items.filter(item => {
+    if (currentFilter === 'all') {
+      return !item.completed;
+    }
+    if (currentFilter === 'in-progress') return !item.completed;
+    if (currentFilter === 'completed') return item.completed;
+    if (currentFilter === 'character-5') return item.type === 'character' && item.rarity === '5' && !item.completed;
+    if (currentFilter === 'character-4') return item.type === 'character' && item.rarity === '4' && !item.completed;
+    if (currentFilter === 'weapon-5') return item.type === 'weapon' && item.rarity === '5' && !item.completed;
+    if (currentFilter === 'weapon-4') return item.type === 'weapon' && item.rarity === '4' && !item.completed;
+    if (currentFilter === 'ascension-materials') return item.materialType === 'ascension' && !item.completed;
+    if (currentFilter === 'talent-materials') return item.materialType === 'talent' && !item.completed;
+    if (['pyro', 'hydro', 'dendro', 'geo', 'cryo', 'anemo', 'electro'].includes(currentFilter)) {
+      return item.element === currentFilter && !item.completed;
+    }
     
-    return `
-      <div class="material-slot">
-        <img src="${material.image || getDefaultMaterialImage()}" alt="${material.name}" class="material-image" />
-        <div class="material-name">${material.name || 'Material'}</div>
-        <div class="material-count ${isComplete ? 'complete' : 'incomplete'}">${progress}/${total}</div>
-      </div>
-    `;
-  }).join('') : '<div class="material-slot"><div class="material-name">No materials added</div></div>';
+    return true;
+  });
+}
+
+// Render Functions
+function renderMaterialItems() {
+  const inProgressContainer = document.getElementById('inProgressContainer');
+  const completedContainer = document.getElementById('completedContainer');
+  
+  if (!inProgressContainer || !completedContainer) return;
+  
+  inProgressContainer.innerHTML = '';
+  completedContainer.innerHTML = '';
+  
+  // Solo mostrar items según el filtro actual
+  if (currentFilter === 'completed') {
+    // Si el filtro es "completed", solo mostrar la sección de completed
+    const completedItems = materialItems.filter(item => item.completed);
+    completedItems.forEach(item => {
+      completedContainer.appendChild(createMaterialItem(item));
+    });
+    document.getElementById('completedCount').textContent = `${completedItems.length} item${completedItems.length !== 1 ? 's' : ''}`;
+    document.getElementById('inProgressCount').textContent = '0 items';
+    
+    // Hide in progress section when showing completed
+    document.getElementById('inProgressSection').style.display = 'none';
+    document.getElementById('completedSection').style.display = 'block';
+  } else {
+    // Para cualquier otro filtro, mostrar items filtrados en "In Progress"
+    const filteredItems = filterItems(materialItems);
+    filteredItems.forEach(item => {
+      inProgressContainer.appendChild(createMaterialItem(item));
+    });
+    document.getElementById('inProgressCount').textContent = `${filteredItems.length} item${filteredItems.length !== 1 ? 's' : ''}`;
+    
+    // También mostrar items completados en la sección de completed (pero sin filtros)
+    const completedItems = materialItems.filter(item => item.completed);
+    completedItems.forEach(item => {
+      completedContainer.appendChild(createMaterialItem(item));
+    });
+    document.getElementById('completedCount').textContent = `${completedItems.length} item${completedItems.length !== 1 ? 's' : ''}`;
+    
+    // Show both sections for non-completed filters
+    document.getElementById('inProgressSection').style.display = 'block';
+    document.getElementById('completedSection').style.display = 'block';
+  }
+}
+
+function createMaterialItem(item) {
+  const div = document.createElement('div');
+  div.className = `material-item ${item.completed ? 'completed' : ''}`;
+  div.dataset.itemId = item.id;
+  
+  // Calculate materials progress
+  const materialsProgress = calculateMaterialsProgress(item.materials || []);
   
   div.innerHTML = `
     <div class="drag-handle">⋮⋮</div>
-    ${imageHtml}
+    <img src="${item.image || generateDefaultImage(item)}" alt="${item.name}" class="item-image" />
     <div class="item-content">
       <div class="item-header">
         <div class="item-title">
-          <h3 class="item-name${item.completed ? ' completed' : ''}">${item.name}</h3>
-          ${levelHtml}
+          <h3 class="item-name ${item.completed ? 'completed' : ''}">${item.name}</h3>
+          <div class="level-selectors">
+            <select class="level-select" onchange="updateItemLevel('${item.id}', 'currentLevel', this.value)" ${item.completed ? 'disabled' : ''}>
+              ${generateLevelOptions(item.currentLevel)}
+            </select>
+            <span class="level-arrow">→</span>
+            <select class="level-select" onchange="updateItemLevel('${item.id}', 'targetLevel', this.value)" ${item.completed ? 'disabled' : ''}>
+              ${generateLevelOptions(item.targetLevel)}
+            </select>
+          </div>
         </div>
         <div class="item-meta">
-          <div class="item-rarity">${stars}</div>
-          <span class="item-tag">${typeIcon} ${item.type}</span>
-          ${elementHtml}
-          ${item.ascensionMaterials?.length > 0 ? '<span class="item-tag">Ascension Materials</span>' : ''}
-          ${item.talentMaterials?.length > 0 ? '<span class="item-tag">Talent Materials</span>' : ''}
+          <span class="item-rarity">${'★'.repeat(parseInt(item.rarity))}</span>
+          <span class="item-tag">${capitalizeWords(item.type)}</span>
+          ${item.element ? `<span class="item-element">${capitalizeWords(item.element)}</span>` : ''}
+          <span class="item-material-type">${capitalizeWords(item.materialType)} Materials</span>
         </div>
       </div>
+      
       <div class="materials-grid">
-        ${materialsHtml}
+        ${(item.materials || []).map(material => `
+          <div class="material-slot">
+            <img src="${material.image || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ddd" width="100" height="100" rx="10"/><text y="55" x="50" text-anchor="middle" fill="%23999" font-size="30">?</text></svg>'}" alt="${material.name}" class="material-image" />
+            <div class="material-name">${material.name}</div>
+            <div class="material-count ${material.obtained >= material.required ? 'complete' : 'incomplete'}">
+              ${material.obtained}/${material.required}
+            </div>
+          </div>
+        `).join('')}
       </div>
+      
+      ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
+      
       <div class="item-actions">
         <div class="completion-controls">
           <label class="checkbox-label">
-            <input type="checkbox" ${item.completed ? 'checked' : ''} 
-                   onchange="toggleCompleted('${item.id}', this.checked)" />
-            Completed
+            <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleItemCompletion('${item.id}', this.checked)">
+            <span>Materials: ${materialsProgress.completed}/${materialsProgress.total}</span>
           </label>
-          <button class="btn-edit" onclick="showAddModal('${item.id}')">Edit Item</button>
-          <button class="btn-edit-materials" onclick="showEditMaterialsModal('${item.id}')">Edit Materials</button>
         </div>
-        <button class="btn-delete" onclick="deleteItem('${item.id}')" title="Delete item">⌫</button>
+        <div class="item-buttons">
+          <button class="btn-edit-materials" onclick="openMaterialsModal('${item.id}')" ${item.completed ? 'disabled' : ''}>Edit Materials</button>
+          <button class="btn-edit" onclick="editItem('${item.id}')" ${item.completed ? 'disabled' : ''}>Edit</button>
+          <button class="btn-delete" onclick="deleteItem('${item.id}')">×</button>
+        </div>
       </div>
     </div>
   `;
@@ -731,97 +584,88 @@ function createMaterialItemElement(item) {
   return div;
 }
 
-function updateItemLevel(itemId, levelType, value) {
-  const item = materialItems.find(item => item.id === itemId);
-  if (item) {
-    item[levelType] = parseInt(value);
-    saveToLocalStorage();
+function generateLevelOptions(selectedLevel) {
+  let options = '';
+  for (let i = 1; i <= 90; i++) {
+    options += `<option value="${i}" ${i.toString() === selectedLevel ? 'selected' : ''}>${i}</option>`;
   }
+  return options;
 }
 
-function getElementEmoji(element) {
-  const emojis = {
-    pyro: '',
-    hydro: '',
-    dendro: '',
-    geo: '',
-    cryo: '',
-    anemo: '',
-    electro: ''
+function generateDefaultImage(item) {
+  const colors = {
+    'pyro': '#FF6B6B',
+    'hydro': '#4ECDC4',
+    'dendro': '#95E1D3',
+    'geo': '#F38BA8',
+    'cryo': '#A8E6CF',
+    'anemo': '#88D8B0',
+    'electro': '#C77DFF',
+    'character': '#b38478',
+    'weapon': '#8b5a3c'
   };
-  return emojis[element] || '';
+  
+  const color = colors[item.element] || colors[item.type] || '#b38478';
+  const symbol = item.type === 'character' ? '♦' : '⚔';
+  
+  return `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="${encodeURIComponent(color)}" width="100" height="100" rx="15"/><text y="60" x="50" text-anchor="middle" fill="white" font-size="35">${symbol}</text></svg>`;
 }
 
-function updateItemCounts() {
-  const inProgressCount = materialItems.filter(item => !item.completed).length;
-  const completedCount = materialItems.filter(item => item.completed).length;
-  
-  const inProgressCountElement = document.getElementById('inProgressCount');
-  const completedCountElement = document.getElementById('completedCount');
-  
-  if (inProgressCountElement) {
-    inProgressCountElement.textContent = `${inProgressCount} item${inProgressCount !== 1 ? 's' : ''}`;
-  }
-  
-  if (completedCountElement) {
-    completedCountElement.textContent = `${completedCount} item${completedCount !== 1 ? 's' : ''}`;
-  }
+function calculateMaterialsProgress(materials) {
+  const total = materials.length;
+  const completed = materials.filter(m => m.obtained >= m.required).length;
+  return { completed, total };
 }
 
-// Drag and Drop functionality
-function setupDragAndDrop() {
-  document.addEventListener('dragstart', handleDragStart);
-  document.addEventListener('dragend', handleDragEnd);
-  document.addEventListener('dragover', handleDragOver);
-  document.addEventListener('drop', handleDrop);
-}
-
-function handleDragStart(e) {
-  if (e.target.classList.contains('material-item')) {
-    draggedElement = e.target;
-    e.target.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
+function updateItemLevel(itemId, levelType, value) {
+  const item = materialItems.find(i => i.id === itemId);
+  if (item) {
+    item[levelType] = value;
+    saveMaterialItems();
+    renderMaterialItems();
   }
 }
 
-function handleDragEnd(e) {
-  if (e.target.classList.contains('material-item')) {
-    e.target.classList.remove('dragging');
-    draggedElement = null;
+function toggleItemCompletion(itemId, completed) {
+  const item = materialItems.find(i => i.id === itemId);
+  if (item) {
+    item.completed = completed;
+    saveMaterialItems();
+    renderMaterialItems();
   }
 }
 
-function handleDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
+function editItem(itemId) {
+  const item = materialItems.find(i => i.id === itemId);
+  if (!item) return;
+  
+  editingItemId = itemId;
+  document.getElementById('modalTitle').textContent = 'Edit Item';
+  
+  // Populate form with existing data
+  document.getElementById('itemName').value = item.name;
+  document.getElementById('itemType').value = item.type;
+  document.getElementById('itemRarity').value = item.rarity;
+  document.getElementById('itemElement').value = item.element || '';
+  document.getElementById('materialType').value = item.materialType;
+  document.getElementById('itemNotes').value = item.notes || '';
+  
+  // Populate and show level selectors
+  populateLevelSelectors();
+  document.getElementById('currentLevel').value = item.currentLevel;
+  document.getElementById('targetLevel').value = item.targetLevel;
+  
+  // Handle element field visibility
+  handleTypeChange();
+  
+  document.getElementById('submitButton').textContent = 'Update Item';
+  document.getElementById('addModal').classList.add('show');
 }
 
-function handleDrop(e) {
-  e.preventDefault();
-  
-  const item = e.target.closest('.material-item');
-  if (item && draggedElement && item !== draggedElement) {
-    const draggedId = draggedElement.dataset.id;
-    const targetId = item.dataset.id;
-    reorderItems(draggedId, targetId);
-    saveToLocalStorage();
+function deleteItem(itemId) {
+  if (confirm('Are you sure you want to delete this item?')) {
+    materialItems = materialItems.filter(item => item.id !== itemId);
+    saveMaterialItems();
+    renderMaterialItems();
   }
-}
-
-function reorderItems(draggedId, targetId) {
-  const draggedIndex = materialItems.findIndex(item => item.id === draggedId);
-  const targetIndex = materialItems.findIndex(item => item.id === targetId);
-  
-  if (draggedIndex === -1 || targetIndex === -1) return;
-  
-  // Move the element
-  const [movedItem] = materialItems.splice(draggedIndex, 1);
-  materialItems.splice(targetIndex, 0, movedItem);
-  
-  // Update priorities
-  materialItems.forEach((item, index) => {
-    item.priority = index + 1;
-  });
-  
-  renderMaterials();
 }

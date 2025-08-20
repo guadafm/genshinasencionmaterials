@@ -14,7 +14,7 @@
         <!-- Header -->
         <div class="header">
             <div class="header-content">
-                <h1>⤿✦ Genshin Impact 'Materials' </h1>
+                <h1>Genshin Impact Materials</h1>
                 <p class="text-muted-foreground">Track your character and weapon ascension materials</p>
             </div>
             <button class="btn-primary" id="addButton">Add Item</button>
@@ -35,13 +35,15 @@
                 <button class="btn-filter" data-filter="cryo">Cryo</button>
                 <button class="btn-filter" data-filter="anemo">Anemo</button>
                 <button class="btn-filter" data-filter="electro">Electro</button>
+                <button class="btn-filter" data-filter="ascension-materials">Ascension Materials</button>
+                <button class="btn-filter" data-filter="talent-materials">Talent Materials</button>
                 <button class="btn-filter" data-filter="in-progress">In Progress</button>
                 <button class="btn-filter" data-filter="completed">Completed</button>
             </div>
         </div>
 
         <!-- In Progress Section -->
-        <div class="section">
+        <div class="section" id="inProgressSection">
             <div class="section-header">
                 <h2>In Progress</h2>
                 <span class="items-count" id="inProgressCount">0 items</span>
@@ -52,7 +54,7 @@
         </div>
 
         <!-- Completed Section -->
-        <div class="section">
+        <div class="section" id="completedSection">
             <div class="section-header">
                 <h2>Completed</h2>
                 <span class="items-count" id="completedCount">0 items</span>
@@ -92,9 +94,15 @@
                         <option value="electro">Electro</option>
                     </select>
                     
+                    <select name="materialType" id="materialType" required>
+                        <option value="">Material Type</option>
+                        <option value="ascension">Ascension Materials</option>
+                        <option value="talent">Talent Materials</option>
+                    </select>
+                    
                     <div class="file-input-container">
                         <label for="imageFile" class="file-input-label">
-                            <span>📷 Choose Image (JPG, PNG, SVG...)</span>
+                            <span>Choose Image (JPG, PNG, SVG...)</span>
                         </label>
                         <input type="file" id="imageFile" name="imageFile" class="file-input" accept="image/*" />
                         <div id="filePreview" class="file-preview-container" style="display: none;">
@@ -129,17 +137,6 @@
                         </div>
                     </div>
                     
-                    <div class="material-category">
-                        <label>
-                            <input type="checkbox" name="ascensionMaterials" id="ascensionMaterials" checked>
-                            Include Ascension Materials
-                        </label>
-                        <label id="talentMaterialsLabel" style="display: none;">
-                            <input type="checkbox" name="talentMaterials" id="talentMaterials">
-                            Include Talent Materials
-                        </label>
-                    </div>
-                    
                     <textarea name="notes" id="itemNotes" placeholder="Notes (optional)"></textarea>
                     
                     <div class="modal-buttons">
@@ -152,15 +149,77 @@
 
         <!-- Edit Materials Modal -->
         <div class="modal" id="editMaterialsModal">
-            <div class="modal-content">
+            <div class="modal-content materials-modal">
                 <h2>Edit Materials</h2>
-                <div id="materialsEditor">
-                    <!-- Materials will be loaded here -->
+                <div class="materials-editor-container">
+                    <div class="current-materials">
+                        <h3>Current Materials</h3>
+                        <div id="currentMaterialsList">
+                            <!-- Current materials will be loaded here -->
+                        </div>
+                        <button type="button" class="btn-primary" id="addMaterialButton">Add Material from Catalog</button>
+                    </div>
                 </div>
                 <div class="modal-buttons">
                     <button type="button" class="btn-primary" id="saveMaterialsButton">Save Changes</button>
                     <button type="button" class="btn-cancel" id="cancelMaterialsButton">Cancel</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Material Catalog Modal -->
+        <div class="modal" id="materialCatalogModal">
+            <div class="modal-content catalog-modal">
+                <h2>Material Catalog</h2>
+                <div class="catalog-search">
+                    <input type="text" id="catalogSearch" placeholder="Search materials..." />
+                    <div class="catalog-filters">
+                        <button class="btn-filter catalog-filter active" data-category="all">All</button>
+                        <button class="btn-filter catalog-filter" data-category="character-exp">Character EXP</button>
+                        <button class="btn-filter catalog-filter" data-category="weapon-exp">Weapon EXP</button>
+                        <button class="btn-filter catalog-filter" data-category="gems">Elemental Gems</button>
+                        <button class="btn-filter catalog-filter" data-category="boss">Boss Materials</button>
+                        <button class="btn-filter catalog-filter" data-category="local">Local Specialties</button>
+                        <button class="btn-filter catalog-filter" data-category="common">Common Drops</button>
+                        <button class="btn-filter catalog-filter" data-category="elite">Elite Drops</button>
+                        <button class="btn-filter catalog-filter" data-category="weekly">Weekly Boss</button>
+                        <button class="btn-filter catalog-filter" data-category="talent">Talent Books</button>
+                        <button class="btn-filter catalog-filter" data-category="weapon-ascension">Weapon Ascension</button>
+                        <button class="btn-filter catalog-filter" data-category="crown">Crown</button>
+                    </div>
+                </div>
+                <div class="catalog-grid" id="catalogGrid">
+                    <!-- Material catalog items will be loaded here -->
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" id="closeCatalogButton">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Custom Material Modal -->
+        <div class="modal" id="addCustomMaterialModal">
+            <div class="modal-content">
+                <h2>Add Custom Material</h2>
+                <form id="customMaterialForm">
+                    <input type="text" id="customMaterialName" placeholder="Material Name" required />
+                    <input type="number" id="customMaterialRequired" placeholder="Required Amount" min="1" value="1" required />
+                    <input type="number" id="customMaterialObtained" placeholder="Obtained Amount" min="0" value="0" required />
+                    <div class="file-input-container">
+                        <label for="customMaterialImage" class="file-input-label">
+                            <span>Choose Material Image (Optional)</span>
+                        </label>
+                        <input type="file" id="customMaterialImage" class="file-input" accept="image/*" />
+                        <div id="customMaterialPreview" class="file-preview-container" style="display: none;">
+                            <img id="customPreviewImage" class="file-preview" />
+                            <div id="customFileName" class="file-name"></div>
+                        </div>
+                    </div>
+                    <div class="modal-buttons">
+                        <button type="submit" class="btn-primary">Add Material</button>
+                        <button type="button" class="btn-cancel" id="cancelCustomMaterialButton">Cancel</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

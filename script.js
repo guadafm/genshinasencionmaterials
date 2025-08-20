@@ -3,44 +3,130 @@ let materialItems = [];
 let currentFilter = 'all';
 let draggedElement = null;
 let editingItemId = null;
+let currentCatalogFilter = 'all';
 
-// Default materials templates 
-const DEFAULT_MATERIALS = {
-  ascension: {
-    character: {
-      4: [
-        { name: 'Character EXP Material', required: 171, image: '', obtained: 0 },
-        { name: 'Elemental Gem', required: 46, image: '', obtained: 0 },
-        { name: 'Local Specialty', required: 168, image: '', obtained: 0 },
-        { name: 'Common Enemy Drop', required: 18, image: '', obtained: 0 }
-      ],
-      5: [
-        { name: 'Character EXP Material', required: 171, image: '', obtained: 0 },
-        { name: 'Elemental Gem', required: 46, image: '', obtained: 0 },
-        { name: 'Local Specialty', required: 168, image: '', obtained: 0 },
-        { name: 'Common Enemy Drop', required: 18, image: '', obtained: 0 },
-        { name: 'Boss Material', required: 46, image: '', obtained: 0 }
-      ]
-    },
-    weapon: {
-      4: [
-        { name: 'Weapon EXP Material', required: 605, image: '', obtained: 0 },
-        { name: 'Weapon Ascension Material', required: 15, image: '', obtained: 0 },
-        { name: 'Common Enemy Drop', required: 23, image: '', obtained: 0 }
-      ],
-      5: [
-        { name: 'Weapon EXP Material', required: 605, image: '', obtained: 0 },
-        { name: 'Weapon Ascension Material', required: 15, image: '', obtained: 0 },
-        { name: 'Elite Enemy Drop', required: 23, image: '', obtained: 0 },
-        { name: 'Weekly Boss Material', required: 6, image: '', obtained: 0 }
-      ]
-    }
-  },
-  talent: [
-    { name: 'Talent Book', required: 114, image: '', obtained: 0 },
-    { name: 'Common Enemy Drop', required: 18, image: '', obtained: 0 },
-    { name: 'Weekly Boss Material', required: 18, image: '', obtained: 0 },
-    { name: 'Crown of Insight', required: 3, image: '', obtained: 0 }
+// Material catalog data - comprehensive collection
+const MATERIAL_CATALOG = {
+  // Character EXP Materials
+  'character-exp': [
+    { id: 'wanderers-advice', name: "Wanderer's Advice", category: 'character-exp', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e6e6fa" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%234b0082" font-size="30">📜</text></svg>' },
+    { id: 'adventurers-experience', name: "Adventurer's Experience", category: 'character-exp', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23add8e6" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23008080" font-size="30">📘</text></svg>' },
+    { id: 'heros-wit', name: "Hero's Wit", category: 'character-exp', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ffd700" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23ff8c00" font-size="30">📕</text></svg>' }
+  ],
+  
+  // Weapon EXP Materials
+  'weapon-exp': [
+    { id: 'enhancement-ore', name: 'Enhancement Ore', category: 'weapon-exp', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23d3d3d3" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23696969" font-size="30">🪨</text></svg>' },
+    { id: 'fine-enhancement-ore', name: 'Fine Enhancement Ore', category: 'weapon-exp', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2398fb98" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23228b22" font-size="30">💎</text></svg>' },
+    { id: 'mystic-enhancement-ore', name: 'Mystic Enhancement Ore', category: 'weapon-exp', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23dda0dd" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%238b008b" font-size="30">💜</text></svg>' }
+  ],
+  
+  // Elemental Gems
+  'gems': [
+    { id: 'agnidus-agate-sliver', name: 'Agnidus Agate Sliver', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ff6347" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🔥</text></svg>' },
+    { id: 'agnidus-agate-fragment', name: 'Agnidus Agate Fragment', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ff4500" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🔥</text></svg>' },
+    { id: 'agnidus-agate-chunk', name: 'Agnidus Agate Chunk', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23dc143c" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🔥</text></svg>' },
+    { id: 'agnidus-agate-gemstone', name: 'Agnidus Agate Gemstone', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23b22222" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🔥</text></svg>' },
+    { id: 'varunada-lazurite-sliver', name: 'Varunada Lazurite Sliver', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2387ceeb" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💧</text></svg>' },
+    { id: 'varunada-lazurite-fragment', name: 'Varunada Lazurite Fragment', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2300bfff" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💧</text></svg>' },
+    { id: 'varunada-lazurite-chunk', name: 'Varunada Lazurite Chunk', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%230080ff" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💧</text></svg>' },
+    { id: 'varunada-lazurite-gemstone', name: 'Varunada Lazurite Gemstone', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23006699" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💧</text></svg>' },
+    { id: 'nagadus-emerald-sliver', name: 'Nagadus Emerald Sliver', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2398fb98" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🌱</text></svg>' },
+    { id: 'nagadus-emerald-fragment', name: 'Nagadus Emerald Fragment', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2332cd32" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🌱</text></svg>' },
+    { id: 'nagadus-emerald-chunk', name: 'Nagadus Emerald Chunk', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23228b22" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🌱</text></svg>' },
+    { id: 'nagadus-emerald-gemstone', name: 'Nagadus Emerald Gemstone', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23006400" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🌱</text></svg>' },
+    { id: 'prithiva-topaz-sliver', name: 'Prithiva Topaz Sliver', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23daa520" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🪨</text></svg>' },
+    { id: 'prithiva-topaz-fragment', name: 'Prithiva Topaz Fragment', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23b8860b" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🪨</text></svg>' },
+    { id: 'prithiva-topaz-chunk', name: 'Prithiva Topaz Chunk', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23cd853f" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🪨</text></svg>' },
+    { id: 'prithiva-topaz-gemstone', name: 'Prithiva Topaz Gemstone', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%238b4513" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🪨</text></svg>' },
+    { id: 'shivada-jade-sliver', name: 'Shivada Jade Sliver', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e0ffff" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23000080" font-size="30">❄️</text></svg>' },
+    { id: 'shivada-jade-fragment', name: 'Shivada Jade Fragment', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23b0e0e6" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23000080" font-size="30">❄️</text></svg>' },
+    { id: 'shivada-jade-chunk', name: 'Shivada Jade Chunk', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2387ceeb" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23000080" font-size="30">❄️</text></svg>' },
+    { id: 'shivada-jade-gemstone', name: 'Shivada Jade Gemstone', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%234682b4" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">❄️</text></svg>' },
+    { id: 'vayuda-turquoise-sliver', name: 'Vayuda Turquoise Sliver', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2340e0d0" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💨</text></svg>' },
+    { id: 'vayuda-turquoise-fragment', name: 'Vayuda Turquoise Fragment', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2320b2aa" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💨</text></svg>' },
+    { id: 'vayuda-turquoise-chunk', name: 'Vayuda Turquoise Chunk', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2300ced1" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💨</text></svg>' },
+    { id: 'vayuda-turquoise-gemstone', name: 'Vayuda Turquoise Gemstone', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23008b8b" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💨</text></svg>' },
+    { id: 'vajrada-amethyst-sliver', name: 'Vajrada Amethyst Sliver', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23dda0dd" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">⚡</text></svg>' },
+    { id: 'vajrada-amethyst-fragment', name: 'Vajrada Amethyst Fragment', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ba55d3" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">⚡</text></svg>' },
+    { id: 'vajrada-amethyst-chunk', name: 'Vajrada Amethyst Chunk', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%239370db" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">⚡</text></svg>' },
+    { id: 'vajrada-amethyst-gemstone', name: 'Vajrada Amethyst Gemstone', category: 'gems', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%238b008b" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">⚡</text></svg>' }
+  ],
+  
+  // Boss Materials
+  'boss': [
+    { id: 'dvalin-plume', name: "Dvalin's Plume", category: 'boss', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23228b22" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🪶</text></svg>' },
+    { id: 'dvalin-claw', name: "Dvalin's Claw", category: 'boss', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23228b22" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🦅</text></svg>' },
+    { id: 'dvalin-sigh', name: "Dvalin's Sigh", category: 'boss', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23228b22" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🌪️</text></svg>' },
+    { id: 'tail-of-boreas', name: 'Tail of Boreas', category: 'boss', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%234682b4" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🐺</text></svg>' },
+    { id: 'ring-of-boreas', name: 'Ring of Boreas', category: 'boss', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%234682b4" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💍</text></svg>' },
+    { id: 'spirit-locket-of-boreas', name: 'Spirit Locket of Boreas', category: 'boss', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%234682b4" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🔮</text></svg>' },
+    { id: 'tusk-of-monoceros-caeli', name: 'Tusk of Monoceros Caeli', category: 'boss', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ffa500" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🦏</text></svg>' },
+    { id: 'shard-of-foul-legacy', name: 'Shard of a Foul Legacy', category: 'boss', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ffa500" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">⚔️</text></svg>' },
+    { id: 'shadow-of-warrior', name: 'Shadow of the Warrior', category: 'boss', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ffa500" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">👤</text></svg>' }
+  ],
+  
+  // Local Specialties (sample)
+  'local': [
+    { id: 'windwheel-aster', name: 'Windwheel Aster', category: 'local', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2398fb98" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🌸</text></svg>' },
+    { id: 'philanemo-mushroom', name: 'Philanemo Mushroom', category: 'local', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23daa520" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🍄</text></svg>' },
+    { id: 'cecilia', name: 'Cecilia', category: 'local', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e6e6fa" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🌺</text></svg>' },
+    { id: 'calla-lily', name: 'Calla Lily', category: 'local', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ffffff" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23000" font-size="30">🌷</text></svg>' },
+    { id: 'valberry', name: 'Valberry', category: 'local', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23dc143c" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🫐</text></svg>' }
+  ],
+  
+  // Common Enemy Drops
+  'common': [
+    { id: 'slime-condensate', name: 'Slime Condensate', category: 'common', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2398fb98" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💧</text></svg>' },
+    { id: 'slime-secretions', name: 'Slime Secretions', category: 'common', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2332cd32" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💧</text></svg>' },
+    { id: 'slime-concentrate', name: 'Slime Concentrate', category: 'common', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23228b22" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💧</text></svg>' },
+    { id: 'damaged-mask', name: 'Damaged Mask', category: 'common', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23d2b48c" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🎭</text></svg>' },
+    { id: 'stained-mask', name: 'Stained Mask', category: 'common', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23cd853f" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🎭</text></svg>' },
+    { id: 'ominous-mask', name: 'Ominous Mask', category: 'common', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%238b4513" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🎭</text></svg>' }
+  ],
+  
+  // Elite Enemy Drops
+  'elite': [
+    { id: 'chaos-device', name: 'Chaos Device', category: 'elite', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ff4500" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">⚙️</text></svg>' },
+    { id: 'chaos-circuit', name: 'Chaos Circuit', category: 'elite', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23dc143c" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">⚙️</text></svg>' },
+    { id: 'chaos-core', name: 'Chaos Core', category: 'elite', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23b22222" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">⚙️</text></svg>' },
+    { id: 'mist-grass-pollen', name: 'Mist Grass Pollen', category: 'elite', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23adff2f" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🌿</text></svg>' },
+    { id: 'mist-grass', name: 'Mist Grass', category: 'elite', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2332cd32" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🌿</text></svg>' },
+    { id: 'mist-grass-wick', name: 'Mist Grass Wick', category: 'elite', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23228b22" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🌿</text></svg>' }
+  ],
+  
+  // Weekly Boss Materials
+  'weekly': [
+    { id: 'dvalins-plume', name: "Dvalin's Plume", category: 'weekly', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23228b22" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🪶</text></svg>' },
+    { id: 'ring-of-boreas', name: 'Ring of Boreas', category: 'weekly', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%234682b4" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">💍</text></svg>' },
+    { id: 'tusk-of-monoceros', name: 'Tusk of Monoceros Caeli', category: 'weekly', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ffa500" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🦏</text></svg>' },
+    { id: 'shard-foul-legacy', name: 'Shard of a Foul Legacy', category: 'weekly', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ffa500" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">⚔️</text></svg>' }
+  ],
+  
+  // Talent Books
+  'talent': [
+    { id: 'teachings-freedom', name: 'Teachings of Freedom', category: 'talent', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2387ceeb" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">📖</text></svg>' },
+    { id: 'guide-freedom', name: 'Guide to Freedom', category: 'talent', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2300bfff" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">📘</text></svg>' },
+    { id: 'philosophies-freedom', name: 'Philosophies of Freedom', category: 'talent', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%230080ff" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">📕</text></svg>' },
+    { id: 'teachings-resistance', name: 'Teachings of Resistance', category: 'talent', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ff6347" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">📖</text></svg>' },
+    { id: 'guide-resistance', name: 'Guide to Resistance', category: 'talent', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ff4500" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">📘</text></svg>' },
+    { id: 'philosophies-resistance', name: 'Philosophies of Resistance', category: 'talent', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23dc143c" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">📕</text></svg>' },
+    { id: 'teachings-ballad', name: 'Teachings of Ballad', category: 'talent', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2332cd32" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">📖</text></svg>' },
+    { id: 'guide-ballad', name: 'Guide to Ballad', category: 'talent', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23228b22" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">📘</text></svg>' },
+    { id: 'philosophies-ballad', name: 'Philosophies of Ballad', category: 'talent', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23006400" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">📕</text></svg>' }
+  ],
+  
+  // Weapon Ascension Materials
+  'weapon-ascension': [
+    { id: 'tile-decarabian', name: 'Tile of Decarabian\'s Tower', category: 'weapon-ascension', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2340e0d0" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🧱</text></svg>' },
+    { id: 'debris-decarabian', name: 'Debris of Decarabian\'s City', category: 'weapon-ascension', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2320b2aa" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🧱</text></svg>' },
+    { id: 'fragment-decarabian', name: 'Fragment of Decarabian\'s Epic', category: 'weapon-ascension', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2300ced1" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🧱</text></svg>' },
+    { id: 'scattered-piece-boreas', name: 'Scattered Piece of Decarabian\'s Dream', category: 'weapon-ascension', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23008b8b" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">🧱</text></svg>' }
+  ],
+  
+  // Crown
+  'crown': [
+    { id: 'crown-insight', name: 'Crown of Insight', category: 'crown', image: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ffd700" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23fff" font-size="30">👑</text></svg>' }
   ]
 };
 
@@ -87,11 +173,16 @@ function saveToLocalStorage() {
 
 // File input setup
 function setupFileInput() {
-  const fileInput = document.getElementById('imageFile');
-  const fileLabel = document.querySelector('.file-input-label');
-  const filePreview = document.getElementById('filePreview');
-  const previewImage = document.getElementById('previewImage');
-  const fileName = document.getElementById('fileName');
+  setupImageInput('imageFile', 'filePreview', 'previewImage', 'fileName');
+  setupImageInput('customMaterialImage', 'customMaterialPreview', 'customPreviewImage', 'customFileName');
+}
+
+function setupImageInput(inputId, previewId, imageId, nameId) {
+  const fileInput = document.getElementById(inputId);
+  const fileLabel = document.querySelector(`label[for="${inputId}"]`);
+  const filePreview = document.getElementById(previewId);
+  const previewImage = document.getElementById(imageId);
+  const fileName = document.getElementById(nameId);
 
   if (fileInput) {
     fileInput.addEventListener('change', function(e) {
@@ -126,9 +217,9 @@ function setupFileInput() {
 // Event listeners
 function setupEventListeners() {
   // Filter buttons
-  document.querySelectorAll('.btn-filter').forEach(btn => {
+  document.querySelectorAll('.btn-filter:not(.catalog-filter)').forEach(btn => {
     btn.addEventListener('click', function() {
-      document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.btn-filter:not(.catalog-filter)').forEach(b => b.classList.remove('active'));
       this.classList.add('active');
       currentFilter = this.dataset.filter;
       renderMaterials();
@@ -145,33 +236,7 @@ function setupEventListeners() {
 
   // Modal events
   setupModalEvents();
-
-  // Type change event for showing/hiding element selector and material options
-  const typeSelect = document.getElementById('itemType');
-  const elementSelect = document.getElementById('itemElement');
-  const levelSelector = document.getElementById('levelSelector');
-  const talentMaterialsLabel = document.getElementById('talentMaterialsLabel');
-
-  if (typeSelect) {
-    typeSelect.addEventListener('change', function() {
-      if (this.value === 'character') {
-        elementSelect.style.display = 'block';
-        elementSelect.required = true;
-        levelSelector.style.display = 'block';
-        talentMaterialsLabel.style.display = 'block';
-      } else if (this.value === 'weapon') {
-        elementSelect.style.display = 'none';
-        elementSelect.required = false;
-        levelSelector.style.display = 'block';
-        talentMaterialsLabel.style.display = 'none';
-        document.getElementById('talentMaterials').checked = false;
-      } else {
-        elementSelect.style.display = 'none';
-        levelSelector.style.display = 'none';
-        talentMaterialsLabel.style.display = 'none';
-      }
-    });
-  }
+  setupCatalogEvents();
 }
 
 function setupModalEvents() {
@@ -218,15 +283,15 @@ function setupModalEvents() {
         type: formData.get('type'),
         rarity: parseInt(formData.get('rarity')),
         element: formData.get('element') || null,
+        materialType: formData.get('materialType') || null,
         imageUrl: fileInput.files[0] ? previewImage.src : getDefaultImage(formData.get('type')),
         notes: formData.get('notes').trim(),
         currentLevel: formData.get('currentLevel') ? parseInt(formData.get('currentLevel')) : 1,
         targetLevel: formData.get('targetLevel') ? parseInt(formData.get('targetLevel')) : 90,
-        includeAscension: formData.get('ascensionMaterials') === 'on',
-        includeTalent: formData.get('talentMaterials') === 'on'
+        materials: [] // Start with empty materials array
       };
       
-      if (itemData.name && itemData.type && itemData.rarity) {
+      if (itemData.name && itemData.type && itemData.rarity && itemData.materialType) {
         if (editingItemId) {
           updateItem(itemData);
         } else {
@@ -235,7 +300,7 @@ function setupModalEvents() {
         hideAddModal();
         resetForm();
       } else {
-        alert('Please fill in all required fields (Name, Type, Rarity)');
+        alert('Please fill in all required fields (Name, Type, Rarity, Material Type)');
       }
     });
   }
@@ -247,6 +312,97 @@ function setupModalEvents() {
 
   if (cancelMaterialsBtn) {
     cancelMaterialsBtn.addEventListener('click', hideEditMaterialsModal);
+  }
+
+  // Add material button
+  const addMaterialButton = document.getElementById('addMaterialButton');
+  if (addMaterialButton) {
+    addMaterialButton.addEventListener('click', function() {
+      showMaterialCatalogModal();
+    });
+  }
+
+  // Type change event for showing/hiding element selector
+  const typeSelect = document.getElementById('itemType');
+  const elementSelect = document.getElementById('itemElement');
+  const levelSelector = document.getElementById('levelSelector');
+
+  if (typeSelect) {
+    typeSelect.addEventListener('change', function() {
+      if (this.value === 'character') {
+        elementSelect.style.display = 'block';
+        elementSelect.required = true;
+        levelSelector.style.display = 'block';
+      } else if (this.value === 'weapon') {
+        elementSelect.style.display = 'none';
+        elementSelect.required = false;
+        levelSelector.style.display = 'block';
+      } else {
+        elementSelect.style.display = 'none';
+        levelSelector.style.display = 'none';
+      }
+    });
+  }
+}
+
+function setupCatalogEvents() {
+  const catalogModal = document.getElementById('materialCatalogModal');
+  const catalogSearch = document.getElementById('catalogSearch');
+  const closeCatalogBtn = document.getElementById('closeCatalogButton');
+  const customMaterialModal = document.getElementById('addCustomMaterialModal');
+  const customMaterialForm = document.getElementById('customMaterialForm');
+  const cancelCustomBtn = document.getElementById('cancelCustomMaterialButton');
+
+  // Catalog search
+  if (catalogSearch) {
+    catalogSearch.addEventListener('input', function() {
+      renderCatalogGrid();
+    });
+  }
+
+  // Catalog filters
+  document.querySelectorAll('.catalog-filter').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.catalog-filter').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      currentCatalogFilter = this.dataset.category;
+      renderCatalogGrid();
+    });
+  });
+
+  // Close catalog
+  if (closeCatalogBtn) {
+    closeCatalogBtn.addEventListener('click', hideMaterialCatalogModal);
+  }
+
+  // Close catalog when clicking outside
+  if (catalogModal) {
+    catalogModal.addEventListener('click', function(e) {
+      if (e.target === catalogModal) {
+        hideMaterialCatalogModal();
+      }
+    });
+  }
+
+  // Custom material form
+  if (customMaterialForm) {
+    customMaterialForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      addCustomMaterial();
+    });
+  }
+
+  if (cancelCustomBtn) {
+    cancelCustomBtn.addEventListener('click', hideCustomMaterialModal);
+  }
+
+  // Close custom material modal when clicking outside
+  if (customMaterialModal) {
+    customMaterialModal.addEventListener('click', function(e) {
+      if (e.target === customMaterialModal) {
+        hideCustomMaterialModal();
+      }
+    });
   }
 }
 
@@ -293,11 +449,10 @@ function populateForm(item) {
   document.getElementById('itemType').value = item.type;
   document.getElementById('itemRarity').value = item.rarity;
   document.getElementById('itemElement').value = item.element || '';
+  document.getElementById('materialType').value = item.materialType || '';
   document.getElementById('itemNotes').value = item.notes || '';
   document.getElementById('currentLevel').value = item.currentLevel || 1;
   document.getElementById('targetLevel').value = item.targetLevel || 90;
-  document.getElementById('ascensionMaterials').checked = item.includeAscension !== false;
-  document.getElementById('talentMaterials').checked = item.includeTalent || false;
 
   // Trigger type change event to show/hide fields
   const typeEvent = new Event('change');
@@ -335,7 +490,6 @@ function resetForm() {
   // Hide optional fields
   document.getElementById('itemElement').style.display = 'none';
   document.getElementById('levelSelector').style.display = 'none';
-  document.getElementById('talentMaterialsLabel').style.display = 'none';
 }
 
 // Materials editor modal
@@ -346,7 +500,7 @@ function showEditMaterialsModal(itemId) {
   if (!item) return;
 
   editingItemId = itemId;
-  renderMaterialsEditor(item);
+  renderCurrentMaterials(item);
   modal.classList.add('show');
 }
 
@@ -356,358 +510,397 @@ function hideEditMaterialsModal() {
   editingItemId = null;
 }
 
-function renderMaterialsEditor(item) {
-  const container = document.getElementById('materialsEditor');
+function renderCurrentMaterials(item) {
+  const container = document.getElementById('currentMaterialsList');
   container.innerHTML = '';
 
-  const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-
-  allMaterials.forEach((material, index) => {
-    const div = document.createElement('div');
-    div.className = 'material-editor-item';
-    
-    div.innerHTML = `
-      <div class="material-editor-image-container">
-        <img src="${material.image || getDefaultMaterialImage()}" alt="${material.name}" class="material-editor-image" />
-        <input type="file" id="matImg_${index}" accept="image/*" style="display: none;" onchange="updateMaterialImage('${item.id}', ${index}, this)" />
-        <button type="button" class="btn-change-image" onclick="document.getElementById('matImg_${index}').click()">📷</button>
-      </div>
-      <div class="material-editor-info">
-        <input type="text" value="${material.name}" class="material-editor-name-input" 
-               onchange="updateMaterialName('${item.id}', ${index}, this.value)" placeholder="Material name" />
-        <div class="material-editor-controls">
-          <div class="material-counter">
-            <button type="button" class="counter-btn" onclick="updateMaterialCount('${item.id}', ${index}, -1)">-</button>
-            <input type="number" value="${material.obtained || 0}" min="0" max="9999" class="counter-input" 
-                   onchange="setMaterialCount('${item.id}', ${index}, this.value)" />
-            <button type="button" class="counter-btn" onclick="updateMaterialCount('${item.id}', ${index}, 1)">+</button>
-          </div>
-          <span class="required-amount">/ ${material.required}</span>
-          <input type="number" value="${material.required}" min="1" max="9999" class="required-input" 
-                 onchange="updateMaterialRequired('${item.id}', ${index}, this.value)" placeholder="Required" />
-        </div>
+  if (!item.materials || item.materials.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p>No materials added yet. Click "Add Material from Catalog" to get started.</p>
       </div>
     `;
-    
-    container.appendChild(div);
-  });
-}
-
-function getDefaultMaterialImage() {
-  return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ddd" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23666" font-size="16">MAT</text></svg>';
-}
-
-function updateMaterialImage(itemId, materialIndex, input) {
-  if (!input.files[0]) return;
-  
-  const file = input.files[0];
-  if (!file.type.startsWith('image/')) {
-    alert('Please select a valid image file');
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const item = materialItems.find(item => item.id === itemId);
-    if (!item) return;
+  item.materials.forEach((material, index) => {
+    const materialDiv = document.createElement('div');
+    materialDiv.className = 'current-material-item';
+    materialDiv.innerHTML = `
+      <img src="${material.image}" alt="${material.name}" />
+      <div class="current-material-info">
+        <div class="current-material-name">${material.name}</div>
+        <div class="current-material-inputs">
+          <input type="number" value="${material.obtained}" min="0" max="${material.required}" 
+                 onchange="updateMaterialProgress(${index}, 'obtained', this.value)" />
+          <span>of</span>
+          <input type="number" value="${material.required}" min="1" 
+                 onchange="updateMaterialProgress(${index}, 'required', this.value)" />
+        </div>
+      </div>
+      <button type="button" class="remove-material-btn" onclick="removeMaterial(${index})" title="Remove Material">
+        ✕
+      </button>
+    `;
+    container.appendChild(materialDiv);
+  });
+}
 
-    const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-    if (materialIndex >= 0 && materialIndex < allMaterials.length) {
-      allMaterials[materialIndex].image = e.target.result;
-      renderMaterialsEditor(item);
+function updateMaterialProgress(materialIndex, field, value) {
+  const item = materialItems.find(item => item.id === editingItemId);
+  if (item && item.materials[materialIndex]) {
+    item.materials[materialIndex][field] = parseInt(value) || 0;
+    // Ensure obtained doesn't exceed required
+    if (field === 'required' || field === 'obtained') {
+      const material = item.materials[materialIndex];
+      if (material.obtained > material.required) {
+        material.obtained = material.required;
+      }
     }
-  };
-  reader.readAsDataURL(file);
-}
-
-function updateMaterialName(itemId, materialIndex, name) {
-  const item = materialItems.find(item => item.id === itemId);
-  if (!item) return;
-
-  const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-  if (materialIndex >= 0 && materialIndex < allMaterials.length) {
-    allMaterials[materialIndex].name = name;
   }
 }
 
-function updateMaterialRequired(itemId, materialIndex, required) {
-  const item = materialItems.find(item => item.id === itemId);
-  if (!item) return;
-
-  const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-  if (materialIndex >= 0 && materialIndex < allMaterials.length) {
-    allMaterials[materialIndex].required = Math.max(1, parseInt(required) || 1);
-  }
-}
-
-function updateMaterialCount(itemId, materialIndex, change) {
-  const item = materialItems.find(item => item.id === itemId);
-  if (!item) return;
-
-  const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-  if (materialIndex >= 0 && materialIndex < allMaterials.length) {
-    const material = allMaterials[materialIndex];
-    const newValue = Math.max(0, Math.min(9999, (material.obtained || 0) + change));
-    material.obtained = newValue;
-    
-    renderMaterialsEditor(item);
-  }
-}
-
-function setMaterialCount(itemId, materialIndex, value) {
-  const item = materialItems.find(item => item.id === itemId);
-  if (!item) return;
-
-  const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-  if (materialIndex >= 0 && materialIndex < allMaterials.length) {
-    const material = allMaterials[materialIndex];
-    material.obtained = Math.max(0, Math.min(9999, parseInt(value) || 0));
+function removeMaterial(materialIndex) {
+  const item = materialItems.find(item => item.id === editingItemId);
+  if (item && item.materials) {
+    item.materials.splice(materialIndex, 1);
+    renderCurrentMaterials(item);
   }
 }
 
 function saveMaterialsChanges() {
   saveToLocalStorage();
-  renderMaterials();
   hideEditMaterialsModal();
-}
-
-// CRUD operations
-function addItem(itemData) {
-  const newItem = {
-    id: Date.now().toString(),
-    ...itemData,
-    completed: false,
-    priority: materialItems.filter(item => !item.completed).length + 1,
-    ascensionMaterials: itemData.includeAscension ? generateMaterials('ascension', itemData.type, itemData.rarity) : [],
-    talentMaterials: itemData.includeTalent && itemData.type === 'character' ? generateMaterials('talent') : []
-  };
-  
-  materialItems.push(newItem);
   renderMaterials();
-  updateItemCounts();
-  saveToLocalStorage();
 }
 
-function updateItem(itemData) {
-  const item = materialItems.find(item => item.id === editingItemId);
-  if (item) {
-    Object.assign(item, itemData);
-    
-    // Regenerate materials if type or rarity changed
-    if (itemData.includeAscension) {
-      item.ascensionMaterials = generateMaterials('ascension', itemData.type, itemData.rarity);
-    } else {
-      item.ascensionMaterials = [];
-    }
-    
-    if (itemData.includeTalent && itemData.type === 'character') {
-      item.talentMaterials = generateMaterials('talent');
-    } else {
-      item.talentMaterials = [];
-    }
-    
-    renderMaterials();
-    updateItemCounts();
-    saveToLocalStorage();
-  }
+// Material catalog modal
+function showMaterialCatalogModal() {
+  const modal = document.getElementById('materialCatalogModal');
+  currentCatalogFilter = 'all';
+  document.querySelector('.catalog-filter.active').classList.remove('active');
+  document.querySelector('.catalog-filter[data-category="all"]').classList.add('active');
+  document.getElementById('catalogSearch').value = '';
+  renderCatalogGrid();
+  modal.classList.add('show');
 }
 
-function generateMaterials(type, itemType = null, rarity = null) {
-  if (type === 'ascension' && itemType && rarity) {
-    return DEFAULT_MATERIALS.ascension[itemType][rarity].map(mat => ({...mat}));
-  } else if (type === 'talent') {
-    return DEFAULT_MATERIALS.talent.map(mat => ({...mat}));
-  }
-  return [];
+function hideMaterialCatalogModal() {
+  const modal = document.getElementById('materialCatalogModal');
+  modal.classList.remove('show');
 }
 
-function deleteItem(id) {
-  const item = materialItems.find(item => item.id === id);
-  const itemName = item ? item.name : 'this item';
-  
-  if (confirm(`Are you sure you want to delete "${itemName}"?`)) {
-    materialItems = materialItems.filter(item => item.id !== id);
-    // Reorder priorities
-    const inProgressItems = materialItems.filter(item => !item.completed);
-    const completedItems = materialItems.filter(item => item.completed);
-    
-    inProgressItems.forEach((item, index) => {
-      item.priority = index + 1;
-    });
-    
-    completedItems.forEach((item, index) => {
-      item.priority = index + 1;
-    });
-    
-    renderMaterials();
-    updateItemCounts();
-    saveToLocalStorage();
-  }
-}
-
-function toggleCompleted(id, completed) {
-  const item = materialItems.find(item => item.id === id);
-  if (item) {
-    item.completed = completed;
-    
-    // Reorder priorities
-    const inProgressItems = materialItems.filter(item => !item.completed);
-    const completedItems = materialItems.filter(item => item.completed);
-    
-    if (completed) {
-      item.priority = completedItems.length;
-    } else {
-      item.priority = inProgressItems.length + 1;
-    }
-    
-    inProgressItems.forEach((item, index) => {
-      item.priority = index + 1;
-    });
-    
-    completedItems.forEach((item, index) => {
-      item.priority = index + 1;
-    });
-    
-    renderMaterials();
-    updateItemCounts();
-    saveToLocalStorage();
-  }
-}
-
-// Rendering functions
-function renderMaterials() {
-  const inProgressContainer = document.getElementById('inProgressContainer');
-  const completedContainer = document.getElementById('completedContainer');
-  
-  const filteredItems = getFilteredItems();
-  const inProgressItems = filteredItems.filter(item => !item.completed);
-  const completedItems = filteredItems.filter(item => item.completed);
-  
-  renderSection(inProgressContainer, inProgressItems, 'in-progress');
-  renderSection(completedContainer, completedItems, 'completed');
-  
-  updateItemCounts();
-}
-
-function renderSection(container, items, sectionType) {
-  if (!container) return;
+function renderCatalogGrid() {
+  const container = document.getElementById('catalogGrid');
+  const searchTerm = document.getElementById('catalogSearch').value.toLowerCase();
   
   container.innerHTML = '';
-  
-  if (items.length === 0) {
-    const message = sectionType === 'in-progress' ? 
-      'No items in progress' : 'No completed items';
-    const subMessage = sectionType === 'in-progress' ? 
-      'Add your first character or weapon to get started!' : 
-      'Mark items as completed to see them here.';
-    
+
+  // Get all materials from catalog
+  let materials = [];
+  Object.values(MATERIAL_CATALOG).forEach(categoryMaterials => {
+    materials = materials.concat(categoryMaterials);
+  });
+
+  // Filter materials
+  let filteredMaterials = materials.filter(material => {
+    const matchesSearch = material.name.toLowerCase().includes(searchTerm);
+    const matchesCategory = currentCatalogFilter === 'all' || material.category === currentCatalogFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  if (filteredMaterials.length === 0) {
     container.innerHTML = `
-      <div class="empty-state">
-        <h3>${message}</h3>
-        <p>${subMessage}</p>
-        ${sectionType === 'in-progress' && currentFilter === 'all' ? 
-          '<button class="btn-primary" onclick="showAddModal()">Add your first item</button>' : ''}
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <p>No materials found${searchTerm ? ` for "${searchTerm}"` : ''}.</p>
       </div>
     `;
     return;
   }
-  
-  items.forEach(item => {
-    const itemElement = createMaterialItemElement(item);
-    container.appendChild(itemElement);
-  });
-}
 
-function getFilteredItems() {
-  return materialItems.filter(item => {
-    switch (currentFilter) {
-      case 'character-4':
-        return item.type === 'character' && item.rarity === 4;
-      case 'character-5':
-        return item.type === 'character' && item.rarity === 5;
-      case 'weapon-4':
-        return item.type === 'weapon' && item.rarity === 4;
-      case 'weapon-5':
-        return item.type === 'weapon' && item.rarity === 5;
-      case 'pyro':
-      case 'hydro':
-      case 'dendro':
-      case 'geo':
-      case 'cryo':
-      case 'anemo':
-      case 'electro':
-        return item.element === currentFilter;
-      case 'in-progress':
-        return !item.completed;
-      case 'completed':
-        return item.completed;
-      default:
-        return true;
-    }
-  }).sort((a, b) => a.priority - b.priority);
-}
-
-function createMaterialItemElement(item) {
-  const div = document.createElement('div');
-  div.className = `material-item${item.completed ? ' completed' : ''}`;
-  div.draggable = true;
-  div.dataset.id = item.id;
-  
-  const stars = '★'.repeat(item.rarity);
-  const typeIcon = item.type === 'character' ? '' : '';
-  
-  const imageHtml = item.imageUrl ? 
-    `<img src="${item.imageUrl}" alt="${item.name}" class="item-image" onerror="this.style.display='none'" />` : 
-    `<div class="item-image" style="display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">${typeIcon}</div>`;
-  
-  const elementHtml = item.element ? 
-    `<span class="item-element ${item.element}">${getElementEmoji(item.element)} ${item.element.charAt(0).toUpperCase() + item.element.slice(1)}</span>` : '';
-  
-  const levelHtml = item.type && (item.ascensionMaterials?.length > 0 || item.talentMaterials?.length > 0) ? 
-    `<div class="level-selectors">
-      <select class="level-select" onchange="updateItemLevel('${item.id}', 'currentLevel', this.value)">
-        ${[1, 20, 40, 50, 60, 70, 80, 90].map(level => 
-          `<option value="${level}" ${level === (item.currentLevel || 1) ? 'selected' : ''}>${level}</option>`
-        ).join('')}
-      </select>
-      <span class="level-arrow">→</span>
-      <select class="level-select" onchange="updateItemLevel('${item.id}', 'targetLevel', this.value)">
-        ${[20, 40, 50, 60, 70, 80, 90].map(level => 
-          `<option value="${level}" ${level === (item.targetLevel || 90) ? 'selected' : ''}>${level}</option>`
-        ).join('')}
-      </select>
-    </div>` : '';
-  
-  const allMaterials = [...(item.ascensionMaterials || []), ...(item.talentMaterials || [])];
-  const materialsHtml = allMaterials.length > 0 ? allMaterials.map(material => {
-    const progress = material.obtained || 0;
-    const total = material.required || 1;
-    const isComplete = progress >= total;
-    
-    return `
-      <div class="material-slot">
-        <img src="${material.image || getDefaultMaterialImage()}" alt="${material.name}" class="material-image" />
-        <div class="material-name">${material.name || 'Material'}</div>
-        <div class="material-count ${isComplete ? 'complete' : 'incomplete'}">${progress}/${total}</div>
-      </div>
+  filteredMaterials.forEach(material => {
+    const materialDiv = document.createElement('div');
+    materialDiv.className = 'catalog-item';
+    materialDiv.innerHTML = `
+      <img src="${material.image}" alt="${material.name}" />
+      <div class="catalog-item-name">${material.name}</div>
     `;
-  }).join('') : '<div class="material-slot"><div class="material-name">No materials added</div></div>';
+    materialDiv.addEventListener('click', () => selectMaterialFromCatalog(material));
+    container.appendChild(materialDiv);
+  });
+
+  // Add custom material option
+  const customDiv = document.createElement('div');
+  customDiv.className = 'catalog-item';
+  customDiv.style.borderStyle = 'dashed';
+  customDiv.innerHTML = `
+    <div style="width: 2.5rem; height: 2.5rem; border: 1px dashed var(--border); border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; font-size: 1.2rem;">+</div>
+    <div class="catalog-item-name">Add Custom</div>
+  `;
+  customDiv.addEventListener('click', showCustomMaterialModal);
+  container.appendChild(customDiv);
+}
+
+function selectMaterialFromCatalog(material) {
+  // Show quantity selector or add directly
+  const quantity = prompt(`How many ${material.name} do you need?`, '1');
+  if (quantity && parseInt(quantity) > 0) {
+    addMaterialToCurrentItem(material, parseInt(quantity));
+    hideMaterialCatalogModal();
+  }
+}
+
+function addMaterialToCurrentItem(materialData, required) {
+  const item = materialItems.find(item => item.id === editingItemId);
+  if (!item) return;
+
+  if (!item.materials) {
+    item.materials = [];
+  }
+
+  // Check if material already exists
+  const existingMaterial = item.materials.find(m => m.name === materialData.name);
+  if (existingMaterial) {
+    existingMaterial.required += required;
+  } else {
+    item.materials.push({
+      id: materialData.id || `custom-${Date.now()}`,
+      name: materialData.name,
+      image: materialData.image,
+      required: required,
+      obtained: 0,
+      category: materialData.category || 'custom'
+    });
+  }
+
+  renderCurrentMaterials(item);
+}
+
+// Custom material modal
+function showCustomMaterialModal() {
+  const modal = document.getElementById('addCustomMaterialModal');
+  document.getElementById('customMaterialForm').reset();
+  const filePreview = document.getElementById('customMaterialPreview');
+  const fileLabel = document.querySelector('label[for="customMaterialImage"]');
+  if (filePreview) filePreview.style.display = 'none';
+  if (fileLabel) {
+    fileLabel.classList.remove('has-file');
+    fileLabel.innerHTML = '<span>📷 Choose Material Image (Optional)</span>';
+  }
+  modal.classList.add('show');
+}
+
+function hideCustomMaterialModal() {
+  const modal = document.getElementById('addCustomMaterialModal');
+  modal.classList.remove('show');
+}
+
+function addCustomMaterial() {
+  const name = document.getElementById('customMaterialName').value.trim();
+  const required = parseInt(document.getElementById('customMaterialRequired').value);
+  const obtained = parseInt(document.getElementById('customMaterialObtained').value);
+  const fileInput = document.getElementById('customMaterialImage');
+  const previewImage = document.getElementById('customPreviewImage');
+
+  if (!name || !required) {
+    alert('Please fill in material name and required amount.');
+    return;
+  }
+
+  const materialData = {
+    id: `custom-${Date.now()}`,
+    name: name,
+    image: fileInput.files[0] ? previewImage.src : 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ddd" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="%23666" font-size="30">📦</text></svg>',
+    required: required,
+    obtained: obtained,
+    category: 'custom'
+  };
+
+  const item = materialItems.find(item => item.id === editingItemId);
+  if (item) {
+    if (!item.materials) {
+      item.materials = [];
+    }
+    item.materials.push(materialData);
+    renderCurrentMaterials(item);
+  }
+
+  hideCustomMaterialModal();
+}
+
+// Drag and drop setup
+function setupDragAndDrop() {
+  // This can be implemented later for reordering items
+}
+
+// Add/Update/Delete item functions
+function addItem(itemData) {
+  const newItem = {
+    ...itemData,
+    id: Date.now().toString(),
+    completed: false,
+    materials: itemData.materials || []
+  };
   
-  div.innerHTML = `
+  materialItems.push(newItem);
+  saveToLocalStorage();
+  renderMaterials();
+  updateItemCounts();
+}
+
+function updateItem(itemData) {
+  const index = materialItems.findIndex(item => item.id === editingItemId);
+  if (index !== -1) {
+    // Preserve existing materials and completion status
+    const existingItem = materialItems[index];
+    materialItems[index] = {
+      ...itemData,
+      id: editingItemId,
+      materials: existingItem.materials || [],
+      completed: existingItem.completed || false
+    };
+    saveToLocalStorage();
+    renderMaterials();
+    updateItemCounts();
+  }
+}
+
+function deleteItem(itemId) {
+  if (confirm('Are you sure you want to delete this item?')) {
+    materialItems = materialItems.filter(item => item.id !== itemId);
+    saveToLocalStorage();
+    renderMaterials();
+    updateItemCounts();
+  }
+}
+
+function toggleItemCompletion(itemId) {
+  const item = materialItems.find(item => item.id === itemId);
+  if (item) {
+    item.completed = !item.completed;
+    saveToLocalStorage();
+    renderMaterials();
+    updateItemCounts();
+  }
+}
+
+// Render functions
+function renderMaterials() {
+  const inProgressContainer = document.getElementById('inProgressContainer');
+  const completedContainer = document.getElementById('completedContainer');
+  const inProgressSection = document.getElementById('inProgressSection');
+  const completedSection = document.getElementById('completedSection');
+  
+  // Clear containers
+  inProgressContainer.innerHTML = '';
+  completedContainer.innerHTML = '';
+  
+  // Control section visibility based on current filter
+  if (currentFilter === 'completed') {
+    // Only show completed section when "completed" filter is active
+    inProgressSection.style.display = 'none';
+    completedSection.style.display = 'block';
+  } else {
+    // Show in-progress section for all other filters, hide completed section
+    inProgressSection.style.display = 'block';
+    completedSection.style.display = 'none';
+  }
+  
+  // Filter items based on current filter and completion status
+  const filteredItems = materialItems.filter(item => {
+    if (currentFilter === 'all') return !item.completed; // For 'all', only show non-completed items
+    if (currentFilter === 'in-progress') return !item.completed;
+    if (currentFilter === 'completed') return item.completed;
+    if (currentFilter === 'ascension-materials') return item.materialType === 'ascension' && !item.completed;
+    if (currentFilter === 'talent-materials') return item.materialType === 'talent' && !item.completed;
+    if (currentFilter.includes('-')) {
+      const [type, rarity] = currentFilter.split('-');
+      return item.type === type && item.rarity.toString() === rarity && !item.completed; // Only non-completed for other filters
+    }
+    return item.element === currentFilter && !item.completed; // Only non-completed for element filters
+  });
+  
+  if (currentFilter === 'completed') {
+    // When showing completed filter, render completed items
+    const completedItems = filteredItems;
+    
+    if (completedItems.length === 0) {
+      completedContainer.innerHTML = `
+        <div class="empty-state">
+          <h3>No completed items</h3>
+          <p>Mark items as complete once you've gathered all materials.</p>
+        </div>
+      `;
+    } else {
+      completedItems.forEach(item => {
+        completedContainer.appendChild(createItemElement(item));
+      });
+    }
+  } else {
+    // For all other filters, render in-progress items
+    const inProgressItems = filteredItems;
+    
+    if (inProgressItems.length === 0) {
+      inProgressContainer.innerHTML = `
+        <div class="empty-state">
+          <h3>No items in progress</h3>
+          <p>Add some items to track their material progress.</p>
+        </div>
+      `;
+    } else {
+      inProgressItems.forEach(item => {
+        inProgressContainer.appendChild(createItemElement(item));
+      });
+    }
+  }
+}
+
+function createItemElement(item) {
+  const itemDiv = document.createElement('div');
+  itemDiv.className = `material-item ${item.completed ? 'completed' : ''}`;
+  itemDiv.dataset.itemId = item.id;
+
+  const materialsHtml = item.materials && item.materials.length > 0 
+    ? item.materials.map(material => {
+        const isComplete = material.obtained >= material.required;
+        return `
+          <div class="material-slot">
+            <img src="${material.image}" alt="${material.name}" class="material-image" />
+            <div class="material-name">${material.name}</div>
+            <span class="material-count ${isComplete ? 'complete' : 'incomplete'}">
+              ${material.obtained}/${material.required}
+            </span>
+          </div>
+        `;
+      }).join('')
+    : '<div class="empty-state"><p>No materials added yet.</p></div>';
+
+  itemDiv.innerHTML = `
     <div class="drag-handle">⋮⋮</div>
-    ${imageHtml}
+    <img src="${item.imageUrl}" alt="${item.name}" class="item-image" />
     <div class="item-content">
       <div class="item-header">
         <div class="item-title">
-          <h3 class="item-name${item.completed ? ' completed' : ''}">${item.name}</h3>
-          ${levelHtml}
+          <h3 class="item-name ${item.completed ? 'completed' : ''}">${item.name}</h3>
+          <div class="level-selectors">
+            <select class="level-select" onchange="updateItemLevel('${item.id}', 'currentLevel', this.value)">
+              ${[1, 20, 40, 50, 60, 70, 80, 90].map(level => 
+                `<option value="${level}" ${item.currentLevel === level ? 'selected' : ''}>${level}</option>`
+              ).join('')}
+            </select>
+            <span class="level-arrow">→</span>
+            <select class="level-select" onchange="updateItemLevel('${item.id}', 'targetLevel', this.value)">
+              ${[20, 40, 50, 60, 70, 80, 90].map(level => 
+                `<option value="${level}" ${item.targetLevel === level ? 'selected' : ''}>${level}</option>`
+              ).join('')}
+            </select>
+          </div>
         </div>
         <div class="item-meta">
-          <div class="item-rarity">${stars}</div>
-          <span class="item-tag">${typeIcon} ${item.type}</span>
-          ${elementHtml}
-          ${item.ascensionMaterials?.length > 0 ? '<span class="item-tag">Ascension Materials</span>' : ''}
-          ${item.talentMaterials?.length > 0 ? '<span class="item-tag">Talent Materials</span>' : ''}
+          <span class="item-rarity">${'★'.repeat(item.rarity)}</span>
+          <span class="item-tag">${item.type.charAt(0).toUpperCase() + item.type.slice(1)}</span>
+          ${item.element ? `<span class="item-element">${item.element.charAt(0).toUpperCase() + item.element.slice(1)}</span>` : ''}
+          ${item.materialType ? `<span class="item-material-type">${item.materialType.charAt(0).toUpperCase() + item.materialType.slice(1)} Materials</span>` : ''}
         </div>
       </div>
       <div class="materials-grid">
@@ -717,18 +910,24 @@ function createMaterialItemElement(item) {
         <div class="completion-controls">
           <label class="checkbox-label">
             <input type="checkbox" ${item.completed ? 'checked' : ''} 
-                   onchange="toggleCompleted('${item.id}', this.checked)" />
-            Completed
+                   onchange="toggleItemCompletion('${item.id}')" />
+            Mark as completed
           </label>
-          <button class="btn-edit" onclick="showAddModal('${item.id}')">Edit Item</button>
-          <button class="btn-edit-materials" onclick="showEditMaterialsModal('${item.id}')">Edit Materials</button>
+          <button class="btn-edit-materials" onclick="showEditMaterialsModal('${item.id}')">
+            Edit Materials
+          </button>
+          <button class="btn-edit" onclick="showAddModal('${item.id}')">
+            Edit Item
+          </button>
         </div>
-        <button class="btn-delete" onclick="deleteItem('${item.id}')" title="Delete item">⌫</button>
+        <button class="btn-delete" onclick="deleteItem('${item.id}')" title="Delete Item">
+          ×
+        </button>
       </div>
     </div>
   `;
-  
-  return div;
+
+  return itemDiv;
 }
 
 function updateItemLevel(itemId, levelType, value) {
@@ -739,89 +938,64 @@ function updateItemLevel(itemId, levelType, value) {
   }
 }
 
-function getElementEmoji(element) {
-  const emojis = {
-    pyro: '',
-    hydro: '',
-    dendro: '',
-    geo: '',
-    cryo: '',
-    anemo: '',
-    electro: ''
-  };
-  return emojis[element] || '';
-}
-
 function updateItemCounts() {
   const inProgressCount = materialItems.filter(item => !item.completed).length;
   const completedCount = materialItems.filter(item => item.completed).length;
   
-  const inProgressCountElement = document.getElementById('inProgressCount');
-  const completedCountElement = document.getElementById('completedCount');
-  
-  if (inProgressCountElement) {
-    inProgressCountElement.textContent = `${inProgressCount} item${inProgressCount !== 1 ? 's' : ''}`;
-  }
-  
-  if (completedCountElement) {
-    completedCountElement.textContent = `${completedCount} item${completedCount !== 1 ? 's' : ''}`;
-  }
-}
-
-// Drag and Drop functionality
-function setupDragAndDrop() {
-  document.addEventListener('dragstart', handleDragStart);
-  document.addEventListener('dragend', handleDragEnd);
-  document.addEventListener('dragover', handleDragOver);
-  document.addEventListener('drop', handleDrop);
-}
-
-function handleDragStart(e) {
-  if (e.target.classList.contains('material-item')) {
-    draggedElement = e.target;
-    e.target.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-  }
-}
-
-function handleDragEnd(e) {
-  if (e.target.classList.contains('material-item')) {
-    e.target.classList.remove('dragging');
-    draggedElement = null;
+  // Update counts based on current filter
+  if (currentFilter === 'completed') {
+    document.getElementById('completedCount').textContent = `${completedCount} item${completedCount !== 1 ? 's' : ''}`;
+  } else {
+    // For all other filters, show in-progress count
+    let filteredCount = inProgressCount;
+    if (currentFilter !== 'all' && currentFilter !== 'in-progress') {
+      // Count items that match the current filter and are not completed
+      if (currentFilter === 'ascension-materials') {
+        filteredCount = materialItems.filter(item => 
+          item.materialType === 'ascension' && !item.completed
+        ).length;
+      } else if (currentFilter === 'talent-materials') {
+        filteredCount = materialItems.filter(item => 
+          item.materialType === 'talent' && !item.completed
+        ).length;
+      } else if (currentFilter.includes('-')) {
+        const [type, rarity] = currentFilter.split('-');
+        filteredCount = materialItems.filter(item => 
+          item.type === type && item.rarity.toString() === rarity && !item.completed
+        ).length;
+      } else {
+        filteredCount = materialItems.filter(item => 
+          item.element === currentFilter && !item.completed
+        ).length;
+      }
+    }
+    document.getElementById('inProgressCount').textContent = `${filteredCount} item${filteredCount !== 1 ? 's' : ''}`;
   }
 }
 
-function handleDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
+// Local storage functions
+function saveToLocalStorage() {
+  localStorage.setItem('genshinMaterialItems', JSON.stringify(materialItems));
 }
 
-function handleDrop(e) {
-  e.preventDefault();
-  
-  const item = e.target.closest('.material-item');
-  if (item && draggedElement && item !== draggedElement) {
-    const draggedId = draggedElement.dataset.id;
-    const targetId = item.dataset.id;
-    reorderItems(draggedId, targetId);
-    saveToLocalStorage();
+function loadFromLocalStorage() {
+  const saved = localStorage.getItem('genshinMaterialItems');
+  if (saved) {
+    try {
+      materialItems = JSON.parse(saved);
+    } catch (e) {
+      console.error('Error loading from localStorage:', e);
+      materialItems = [];
+    }
   }
 }
 
-function reorderItems(draggedId, targetId) {
-  const draggedIndex = materialItems.findIndex(item => item.id === draggedId);
-  const targetIndex = materialItems.findIndex(item => item.id === targetId);
-  
-  if (draggedIndex === -1 || targetIndex === -1) return;
-  
-  // Move the element
-  const [movedItem] = materialItems.splice(draggedIndex, 1);
-  materialItems.splice(targetIndex, 0, movedItem);
-  
-  // Update priorities
-  materialItems.forEach((item, index) => {
-    item.priority = index + 1;
-  });
-  
+// Initialize app
+document.addEventListener('DOMContentLoaded', function() {
+  loadFromLocalStorage();
+  setupEventListeners();
+  setupFileInput();
+  setupDragAndDrop();
   renderMaterials();
-}
+  updateItemCounts();
+});

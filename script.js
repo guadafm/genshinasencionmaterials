@@ -1,3 +1,27 @@
+// Generate level options for selectors
+function generateLevelOptions() {
+  const currentLevelSelect = document.getElementById('currentLevel');
+  const targetLevelSelect = document.getElementById('targetLevel');
+  
+  // Clear existing options
+  currentLevelSelect.innerHTML = '';
+  targetLevelSelect.innerHTML = '';
+  
+  // Generate levels 1-90
+  for (let i = 1; i <= 90; i++) {
+    const currentOption = document.createElement('option');
+    currentOption.value = i;
+    currentOption.textContent = i;
+    if (i === 1) currentOption.selected = true; // Default current level
+    currentLevelSelect.appendChild(currentOption);
+    
+    const targetOption = document.createElement('option');
+    targetOption.value = i;
+    targetOption.textContent = i;
+    if (i === 90) targetOption.selected = true; // Default target level
+    targetLevelSelect.appendChild(targetOption);
+  }
+}
 // Global variables
 let materialItems = [];
 let currentFilter = 'all';
@@ -9,9 +33,9 @@ document.addEventListener('DOMContentLoaded', function() {
   initializeApp();
 });
 
-// Initialize application
 function initializeApp() {
   loadMaterialItems();
+  generateLevelOptions();
   setupEventListeners();
   renderMaterialItems();
 }
@@ -423,15 +447,15 @@ function createMaterialItem(item) {
           <h3 class="item-name${item.completed ? ' completed' : ''}">${item.name}</h3>
           <div class="level-selectors">
             <select class="level-select" onchange="updateItemLevel('${item.id}', 'currentLevel', this.value)">
-              ${[1, 20, 40, 50, 60, 70, 80, 90].map(level => 
-                `<option value="${level}" ${item.currentLevel == level ? 'selected' : ''}>${level}</option>`
-              ).join('')}
+              ${Array.from({length: 90}, (_, i) => i + 1).map(level => 
+    `<option value="${level}" ${item.currentLevel == level ? 'selected' : ''}>${level}</option>`
+).join('')}
             </select>
             <span class="level-arrow">→</span>
             <select class="level-select" onchange="updateItemLevel('${item.id}', 'targetLevel', this.value)">
-              ${[20, 40, 50, 60, 70, 80, 90].map(level => 
-                `<option value="${level}" ${item.targetLevel == level ? 'selected' : ''}>${level}</option>`
-              ).join('')}
+             ${Array.from({length: 90}, (_, i) => i + 1).map(level => 
+    `<option value="${level}" ${item.targetLevel == level ? 'selected' : ''}>${level}</option>`
+).join('')}
             </select>
           </div>
         </div>

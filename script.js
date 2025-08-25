@@ -526,7 +526,6 @@ function generateMaterials(itemData) {
   return materials;
 }
 
-// Rendering
 function renderMaterials() {
   const inProgressContainer = document.getElementById('inProgressContainer');
   const completedContainer = document.getElementById('completedContainer');
@@ -535,8 +534,18 @@ function renderMaterials() {
   completedContainer.innerHTML = '';
   
   const filteredItems = materialItems.filter(item => {
+    // Si el filtro es "completed", solo mostrar items completados
+    if (currentFilter === 'completed') {
+      return item.completed;
+    }
+    
+    // Para todos los otros filtros, EXCLUIR items completados
+    if (item.completed) {
+      return false;
+    }
+    
+    // Aplicar los filtros normales solo a items no completados
     if (currentFilter === 'all') return true;
-    if (currentFilter === 'completed') return item.completed;
     if (currentFilter === 'in-progress') return !item.completed;
     if (currentFilter.includes('-')) {
       const [type, rarity] = currentFilter.split('-');
@@ -544,6 +553,18 @@ function renderMaterials() {
     }
     return item.element === currentFilter;
   });
+  
+  filteredItems.forEach(item => {
+    const itemElement = createItemElement(item);
+    if (item.completed) {
+      completedContainer.appendChild(itemElement);
+    } else {
+      inProgressContainer.appendChild(itemElement);
+    }
+  });
+  
+  updateItemCounts();
+}
   
   filteredItems.forEach(item => {
     const itemElement = createItemElement(item);
@@ -677,8 +698,30 @@ function calculateCompletionPercentage(item) {
 }
 
 function updateItemCounts() {
-  const inProgressCount = materialItems.filter(item => !item.completed).length;
-  const completedCount = materialItems.filter(item => item.completed).length;
+  let inProgressCount = 0;
+  let completedCount = 0;
+  
+  if (currentFilter === 'completed') {
+    // Si estamos en el filtro completed, solo contar items completados
+    completedCount = materialItems.filter(item => item.completed).length;
+    inProgressCount = 0;
+  } else {
+    // Para otros filtros, contar solo items no completados que pasen el filtro
+    const filteredInProgress = materialItems.filter(item => {
+      if (item.completed) return false; // Excluir completados
+      
+      if (currentFilter === 'all') return true;
+      if (currentFilter === 'in-progress') return true;
+      if (currentFilter.includes('-')) {
+        const [type, rarity] = currentFilter.split('-');
+        return item.type === type && item.rarity.toString() === rarity;
+      }
+      return item.element === currentFilter;
+    });
+    
+    inProgressCount = filteredInProgress.length;
+    completedCount = 0;
+  }
   
   document.getElementById('inProgressCount').textContent = `${inProgressCount} items`;
   document.getElementById('completedCount').textContent = `${completedCount} items`;
@@ -746,3 +789,4 @@ function searchItems(query) {
   // This will be implemented if needed
   console.log('Search query:', query);
 }
+

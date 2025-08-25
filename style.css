@@ -876,4 +876,158 @@ body {
   .modal-buttons {
     flex-direction: column;
   }
+
+}
+/* Materials Catalog Styles */
+.materials-catalog {
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.catalog-categories {
+    display: flex;
+    background-color: var(--muted);
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border);
+}
+
+.catalog-tab {
+    background: none;
+    border: none;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    color: var(--foreground);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.catalog-tab.active {
+    background-color: white;
+    border-bottom-color: var(--primary);
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.catalog-tab:hover:not(.active) {
+    background-color: var(--secondary);
+}
+
+.catalog-content {
+    padding: 1rem;
+    background-color: white;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.catalog-materials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.75rem;
+}
+
+.catalog-material-item {
+    background-color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.catalog-material-item:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.catalog-material-item.selected {
+    border-color: var(--primary);
+    background-color: #f0f7ff;
+}
+
+.catalog-material-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 0.375rem;
+    object-fit: cover;
+    margin: 0 auto 0.5rem;
+    display: block;
+    background-color: white;
+    border: 1px solid var(--border);
+}
+
+.catalog-material-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--foreground);
+}
+
+.current-materials-section {
+    margin-top: 1.5rem;
+}
+
+.current-materials-section h3 {
+    margin-bottom: 1rem;
+    color: var(--foreground);
+    font-size: 1.125rem;
+}
+
+.current-materials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+    min-height: 100px;
+    padding: 1rem;
+    border: 2px dashed var(--border);
+    border-radius: 0.5rem;
+}
+
+.current-material-item {
+    background-color: white;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    text-align: center;
+    position: relative;
+}
+
+.current-material-remove {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: var(--destructive);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-add-from-catalog {
+    background: none;
+    border: 2px dashed var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    width: 100%;
+    cursor: pointer;
+    color: var(--primary);
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-add-from-catalog:hover {
+    border-color: var(--primary);
+    background-color: var(--muted);
 }

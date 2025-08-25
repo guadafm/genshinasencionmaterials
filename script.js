@@ -355,6 +355,7 @@ function showEditMaterialsModal(itemId) {
   editingItemId = itemId;
   renderMaterialsEditor(item);
   modal.classList.add('show');
+  initializeCatalog();
 }
 
 function hideEditMaterialsModal() {
@@ -985,5 +986,6 @@ function searchItems(query) {
   // This will be implemented if needed
   console.log('Search query:', query);
 }
+
 
 

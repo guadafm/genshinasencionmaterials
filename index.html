@@ -154,9 +154,30 @@
         <div class="modal" id="editMaterialsModal">
             <div class="modal-content">
                 <h2>Edit Materials</h2>
-                <div id="materialsEditor">
-                    <!-- Materials will be loaded here -->
-                </div>
+<div class="materials-catalog">
+    <div class="catalog-categories">
+        <button type="button" class="catalog-tab active" data-category="ascension-gems">Ascension Gems</button>
+        <button type="button" class="catalog-tab" data-category="weekly-boss">Weekly Boss Drops</button>
+        <button type="button" class="catalog-tab" data-category="normal-boss">Normal Boss Drops</button>
+        <button type="button" class="catalog-tab" data-category="elite-drops">Elite Drops</button>
+        <button type="button" class="catalog-tab" data-category="general-drops">General Drops</button>
+        <button type="button" class="catalog-tab" data-category="local-specialties">Local Specialties</button>
+        <button type="button" class="catalog-tab" data-category="talent-books">Talent Books</button>
+        <button type="button" class="catalog-tab" data-category="others">Others</button>
+    </div>
+    <div class="catalog-content">
+        <div id="catalogMaterials" class="catalog-materials-grid">
+            <!-- Catalog items will appear here -->
+        </div>
+    </div>
+</div>
+<div class="current-materials-section">
+    <h3>Current Materials</h3>
+    <div id="materialsEditor" class="current-materials-grid">
+        <!-- Current materials will appear here -->
+    </div>
+    <button type="button" class="btn-add-from-catalog">+ Add from catalog</button>
+</div>
                 <div class="modal-buttons">
                     <button type="button" class="btn-primary" id="saveMaterialsButton">Save Changes</button>
                     <button type="button" class="btn-cancel" id="cancelMaterialsButton">Cancel</button>
@@ -165,4 +186,5 @@
         </div>
     </div>
 </body>
+
 </html>

@@ -783,10 +783,207 @@ function handleDrop(e) {
     }
   }
 }
+// Materials Catalog Data
+const MATERIALS_CATALOG = {
+  'ascension-gems': [
+    { id: 'vajrada_amethyst', name: 'Vajrada Amethyst', image: '' },
+    { id: 'varunada_lazurite', name: 'Varunada Lazurite', image: '' },
+    { id: 'agnidus_agate', name: 'Agnidus Agate', image: '' },
+    { id: 'nagadus_emerald', name: 'Nagadus Emerald', image: '' },
+    { id: 'shivada_jade', name: 'Shivada Jade', image: '' },
+    { id: 'vayuda_turquoise', name: 'Vayuda Turquoise', image: '' },
+    { id: 'prithiva_topaz', name: 'Prithiva Topaz', image: '' }
+  ],
+  'weekly-boss': [
+    { id: 'dvalins_plume', name: "Dvalin's Plume", image: '' },
+    { id: 'dvalins_claw', name: "Dvalin's Claw", image: '' },
+    { id: 'dvalins_sigh', name: "Dvalin's Sigh", image: '' },
+    { id: 'tail_of_boreas', name: 'Tail of Boreas', image: '' },
+    { id: 'ring_of_boreas', name: 'Ring of Boreas', image: '' },
+    { id: 'spirit_locket_of_boreas', name: 'Spirit Locket of Boreas', image: '' }
+  ],
+  'normal-boss': [
+    { id: 'hurricane_seed', name: 'Hurricane Seed', image: '' },
+    { id: 'lightning_prism', name: 'Lightning Prism', image: '' },
+    { id: 'basalt_pillar', name: 'Basalt Pillar', image: '' },
+    { id: 'hoarfrost_core', name: 'Hoarfrost Core', image: '' },
+    { id: 'cleansing_heart', name: 'Cleansing Heart', image: '' },
+    { id: 'everflame_seed', name: 'Everflame Seed', image: '' }
+  ],
+  'elite-drops': [
+    { id: 'chaos_device', name: 'Chaos Device', image: '' },
+    { id: 'chaos_circuit', name: 'Chaos Circuit', image: '' },
+    { id: 'chaos_core', name: 'Chaos Core', image: '' },
+    { id: 'mist_flower_corolla', name: 'Mist Flower Corolla', image: '' },
+    { id: 'flaming_flower_stamen', name: 'Flaming Flower Stamen', image: '' }
+  ],
+  'general-drops': [
+    { id: 'slime_condensate', name: 'Slime Condensate', image: '' },
+    { id: 'slime_secretions', name: 'Slime Secretions', image: '' },
+    { id: 'slime_concentrate', name: 'Slime Concentrate', image: '' },
+    { id: 'hilichurl_mask', name: 'Damaged Mask', image: '' },
+    { id: 'stained_mask', name: 'Stained Mask', image: '' },
+    { id: 'ominous_mask', name: 'Ominous Mask', image: '' }
+  ],
+  'local-specialties': [
+    { id: 'calla_lily', name: 'Calla Lily', image: '' },
+    { id: 'cecilia', name: 'Cecilia', image: '' },
+    { id: 'dandelion_seed', name: 'Dandelion Seed', image: '' },
+    { id: 'philanemo_mushroom', name: 'Philanemo Mushroom', image: '' },
+    { id: 'small_lamp_grass', name: 'Small Lamp Grass', image: '' },
+    { id: 'valberry', name: 'Valberry', image: '' },
+    { id: 'wolfhook', name: 'Wolfhook', image: '' }
+  ],
+  'talent-books': [
+    { id: 'teachings_of_freedom', name: 'Teachings of Freedom', image: '' },
+    { id: 'guide_to_freedom', name: 'Guide to Freedom', image: '' },
+    { id: 'philosophies_of_freedom', name: 'Philosophies of Freedom', image: '' },
+    { id: 'teachings_of_resistance', name: 'Teachings of Resistance', image: '' },
+    { id: 'guide_to_resistance', name: 'Guide to Resistance', image: '' },
+    { id: 'philosophies_of_resistance', name: 'Philosophies of Resistance', image: '' }
+  ],
+  'others': [
+    { id: 'crown_of_insight', name: 'Crown of Insight', image: '' },
+    { id: 'dream_solvent', name: 'Dream Solvent', image: '' },
+    { id: 'dust_of_azoth', name: 'Dust of Azoth', image: '' }
+  ]
+};
 
+let currentCatalogCategory = 'ascension-gems';
+let selectedCatalogItems = [];
+
+// Initialize catalog functionality
+function initializeCatalog() {
+  const catalogTabs = document.querySelectorAll('.catalog-tab');
+  catalogTabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      catalogTabs.forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      currentCatalogCategory = this.dataset.category;
+      renderCatalogMaterials();
+    });
+  });
+  
+  renderCatalogMaterials();
+}
+
+function renderCatalogMaterials() {
+  const catalogContainer = document.getElementById('catalogMaterials');
+  const materials = MATERIALS_CATALOG[currentCatalogCategory] || [];
+  
+  catalogContainer.innerHTML = materials.map(material => `
+    <div class="catalog-material-item" data-id="${material.id}" onclick="toggleCatalogSelection('${material.id}')">
+      <img src="${material.image || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23f1e7e0" width="100" height="100" rx="10"/></svg>'}" 
+           alt="${material.name}" class="catalog-material-image" />
+      <div class="catalog-material-name">${material.name}</div>
+    </div>
+  `).join('');
+}
+
+function toggleCatalogSelection(materialId) {
+  const element = document.querySelector(`[data-id="${materialId}"]`);
+  const isSelected = element.classList.contains('selected');
+  
+  if (isSelected) {
+    element.classList.remove('selected');
+    selectedCatalogItems = selectedCatalogItems.filter(id => id !== materialId);
+  } else {
+    element.classList.add('selected');
+    selectedCatalogItems.push(materialId);
+  }
+}
+
+function addSelectedMaterials() {
+  const item = materialItems.find(item => item.id === editingItemId);
+  if (!item || selectedCatalogItems.length === 0) return;
+  
+  if (!item.materials) item.materials = [];
+  
+  selectedCatalogItems.forEach(itemId => {
+    // Find material in catalog
+    let foundMaterial = null;
+    for (const category in MATERIALS_CATALOG) {
+      const found = MATERIALS_CATALOG[category].find(mat => mat.id === itemId);
+      if (found) {
+        foundMaterial = found;
+        break;
+      }
+    }
+    
+    if (foundMaterial && !item.materials.find(mat => mat.name === foundMaterial.name)) {
+      item.materials.push({
+        name: foundMaterial.name,
+        required: 1,
+        obtained: 0,
+        image: foundMaterial.image
+      });
+    }
+  });
+  
+  selectedCatalogItems = [];
+  document.querySelectorAll('.catalog-material-item.selected').forEach(el => {
+    el.classList.remove('selected');
+  });
+  
+  renderCurrentMaterials();
+}
+
+function renderCurrentMaterials() {
+  const item = materialItems.find(item => item.id === editingItemId);
+  const editor = document.getElementById('materialsEditor');
+  
+  if (!item || !item.materials) {
+    editor.innerHTML = '<div style="text-align: center; color: #999; padding: 2rem;">No materials added yet</div>';
+    return;
+  }
+  
+  editor.innerHTML = item.materials.map((material, index) => `
+    <div class="current-material-item">
+      <button type="button" class="current-material-remove" onclick="removeCurrentMaterial(${index})">×</button>
+      <img src="${material.image || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23f1e7e0" width="100" height="100" rx="10"/></svg>'}" 
+           alt="${material.name}" class="catalog-material-image" />
+      <div class="catalog-material-name">${material.name}</div>
+      <div style="margin-top: 0.5rem; font-size: 0.75rem;">
+        <input type="number" value="${material.obtained}" style="width: 40px; margin-right: 5px;" 
+               onchange="updateMaterialCount(${index}, 'obtained', this.value)" />
+        /
+        <input type="number" value="${material.required}" style="width: 40px; margin-left: 5px;" 
+               onchange="updateMaterialCount(${index}, 'required', this.value)" />
+      </div>
+    </div>
+  `).join('');
+}
+
+function removeCurrentMaterial(index) {
+  const item = materialItems.find(item => item.id === editingItemId);
+  if (item && item.materials) {
+    item.materials.splice(index, 1);
+    renderCurrentMaterials();
+  }
+}
+
+function updateMaterialCount(index, field, value) {
+  const item = materialItems.find(item => item.id === editingItemId);
+  if (item && item.materials && item.materials[index]) {
+    item.materials[index][field] = parseInt(value) || 0;
+  }
+}
+
+// Modify existing renderMaterialsEditor function
+function renderMaterialsEditor(item) {
+  initializeCatalog();
+  renderCurrentMaterials();
+  
+  // Add event listener to the add button
+  const addButton = document.querySelector('.btn-add-from-catalog');
+  if (addButton) {
+    addButton.onclick = addSelectedMaterials;
+  }
+}
 // Search functionality (to be implemented)
 function searchItems(query) {
   // This will be implemented if needed
   console.log('Search query:', query);
 }
+
 

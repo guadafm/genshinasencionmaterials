@@ -259,7 +259,7 @@ function setupModalEvents() {
 
 function getDefaultImage(type) {
   if (type === 'character') {
-    return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle fill="%23e5a6b2" cx="50" cy="50" r="40"/><text y="60" x="50" text-anchor="middle" fill="white" font-size="30">👤</text></svg>';
+    return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle fill="%23e5a6b2" cx="50" cy="50" r="40"/><text y="60" x="50" text-anchor="middle" fill="white" font-size="30">⚔️</text></svg>';
   } else {
     return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23e5a6b2" width="100" height="100" rx="10"/><text y="60" x="50" text-anchor="middle" fill="white" font-size="30">⚔️</text></svg>';
   }
@@ -364,388 +364,385 @@ function hideEditMaterialsModal() {
 }
 
 function renderMaterialsEditor(item) {
-  const container = document.getElementById('materialsEditor');
-  container.innerHTML = '';
-
-  item.materials.forEach((material, index) => {
-    const materialDiv = document.createElement('div');
-    materialDiv.className = 'material-editor-item';
-    materialDiv.innerHTML = `
-      <div class="material-editor-header">
-        <h4>Material ${index + 1}</h4>
-        <button type="button" class="btn-delete-material" data-index="${index}">🗑️</button>
-      </div>
-      <div class="material-editor-fields">
-        <input type="text" placeholder="Material Name" value="${material.name}" data-field="name" data-index="${index}">
-        <input type="number" placeholder="Required" value="${material.required}" min="0" data-field="required" data-index="${index}">
-        <input type="number" placeholder="Obtained" value="${material.obtained}" min="0" data-field="obtained" data-index="${index}">
-        <input type="url" placeholder="Image URL (optional)" value="${material.image}" data-field="image" data-index="${index}">
-      </div>
-    `;
-    container.appendChild(materialDiv);
-  });
-
-  // Add new material button
-  const addMaterialDiv = document.createElement('div');
-  addMaterialDiv.className = 'add-material-section';
-  addMaterialDiv.innerHTML = `
-    <button type="button" class="btn-primary" id="addMaterialButton">Add New Material</button>
-  `;
-  container.appendChild(addMaterialDiv);
-
-  // Setup event listeners for materials editor
-  setupMaterialsEditorEvents();
-}
-
-function setupMaterialsEditorEvents() {
-  const container = document.getElementById('materialsEditor');
-
-  // Input change events
-  container.addEventListener('input', function(e) {
-    if (e.target.matches('input[data-field]')) {
-      const index = parseInt(e.target.dataset.index);
-      const field = e.target.dataset.field;
-      const value = field === 'required' || field === 'obtained' ? parseInt(e.target.value) || 0 : e.target.value;
-      
-      const item = materialItems.find(item => item.id === editingItemId);
-      if (item && item.materials[index]) {
-        item.materials[index][field] = value;
-      }
-    }
-  });
-
-  // Delete material events
-  container.addEventListener('click', function(e) {
-    if (e.target.matches('.btn-delete-material')) {
-      const index = parseInt(e.target.dataset.index);
-      const item = materialItems.find(item => item.id === editingItemId);
-      if (item) {
-        item.materials.splice(index, 1);
-        renderMaterialsEditor(item);
-      }
-    }
-  });
-
-  // Add material event
-  const addMaterialBtn = document.getElementById('addMaterialButton');
-  if (addMaterialBtn) {
-    addMaterialBtn.addEventListener('click', function() {
-      const item = materialItems.find(item => item.id === editingItemId);
-      if (item) {
-        item.materials.push({
-          name: 'New Material',
-          required: 0,
-          obtained: 0,
-          image: ''
-        });
-        renderMaterialsEditor(item);
-      }
+  const editor = document.getElementById('materialsEditor');
+  
+  let html = `<div class="materials-editor-content">`;
+  
+  if (item.materials && item.materials.length > 0) {
+    item.materials.forEach((material, index) => {
+      html += `
+        <div class="material-editor-item">
+          <div class="material-editor-info">
+            <input type="text" class="material-name-input" value="${material.name}" data-index="${index}" placeholder="Material name" />
+            <div class="material-editor-counts">
+              <label>
+                Required: <input type="number" class="material-required-input" value="${material.required}" data-index="${index}" min="0" />
+              </label>
+              <label>
+                Obtained: <input type="number" class="material-obtained-input" value="${material.obtained}" data-index="${index}" min="0" />
+              </label>
+            </div>
+          </div>
+          <button type="button" class="btn-delete-material" data-index="${index}">⌫</button>
+        </div>
+      `;
     });
   }
+  
+  html += `
+    <button type="button" class="btn-add-material" onclick="addMaterialRow()">+ Add Material</button>
+  </div>`;
+  
+  editor.innerHTML = html;
+  
+  // Add event listeners
+  editor.querySelectorAll('.btn-delete-material').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const index = parseInt(this.dataset.index);
+      removeMaterialRow(index);
+    });
+  });
+}
+
+function addMaterialRow() {
+  const item = materialItems.find(item => item.id === editingItemId);
+  if (!item) return;
+  
+  if (!item.materials) item.materials = [];
+  
+  item.materials.push({ name: '', required: 0, obtained: 0, image: '' });
+  renderMaterialsEditor(item);
+}
+
+function removeMaterialRow(index) {
+  const item = materialItems.find(item => item.id === editingItemId);
+  if (!item || !item.materials) return;
+  
+  item.materials.splice(index, 1);
+  renderMaterialsEditor(item);
 }
 
 function saveMaterialsChanges() {
+  const item = materialItems.find(item => item.id === editingItemId);
+  if (!item) return;
+  
+  const editor = document.getElementById('materialsEditor');
+  const nameInputs = editor.querySelectorAll('.material-name-input');
+  const requiredInputs = editor.querySelectorAll('.material-required-input');
+  const obtainedInputs = editor.querySelectorAll('.material-obtained-input');
+  
+  if (!item.materials) item.materials = [];
+  
+  nameInputs.forEach((input, index) => {
+    const name = input.value.trim();
+    const required = parseInt(requiredInputs[index].value) || 0;
+    const obtained = parseInt(obtainedInputs[index].value) || 0;
+    
+    if (name) {
+      if (item.materials[index]) {
+        item.materials[index].name = name;
+        item.materials[index].required = required;
+        item.materials[index].obtained = obtained;
+      } else {
+        item.materials[index] = { name, required, obtained, image: '' };
+      }
+    }
+  });
+  
+  // Remove empty materials
+  item.materials = item.materials.filter(material => material.name.trim() !== '');
+  
   saveToLocalStorage();
   renderMaterials();
   hideEditMaterialsModal();
 }
 
-// Add/Edit/Delete items
+// Item management
 function addItem(itemData) {
   const newItem = {
-    id: Date.now() + Math.random(),
-    name: itemData.name,
-    type: itemData.type,
-    rarity: itemData.rarity,
-    element: itemData.element,
-    imageUrl: itemData.imageUrl,
-    notes: itemData.notes,
-    currentLevel: itemData.currentLevel,
-    targetLevel: itemData.targetLevel,
+    id: Date.now(),
+    ...itemData,
     completed: false,
     materials: generateMaterials(itemData)
   };
-
+  
   materialItems.push(newItem);
   saveToLocalStorage();
   renderMaterials();
   updateItemCounts();
-  console.log('New item added:', newItem);
 }
 
 function updateItem(itemData) {
-  const itemIndex = materialItems.findIndex(item => item.id === editingItemId);
-  if (itemIndex !== -1) {
-    materialItems[itemIndex] = {
-      ...materialItems[itemIndex],
-      name: itemData.name,
-      type: itemData.type,
-      rarity: itemData.rarity,
-      element: itemData.element,
-      imageUrl: itemData.imageUrl,
-      notes: itemData.notes,
-      currentLevel: itemData.currentLevel,
-      targetLevel: itemData.targetLevel
+  const index = materialItems.findIndex(item => item.id === editingItemId);
+  if (index !== -1) {
+    const existingItem = materialItems[index];
+    materialItems[index] = {
+      ...existingItem,
+      ...itemData,
+      materials: existingItem.materials || generateMaterials(itemData)
     };
-    
     saveToLocalStorage();
     renderMaterials();
     updateItemCounts();
-    console.log('Item updated');
   }
 }
 
 function deleteItem(itemId) {
   if (confirm('Are you sure you want to delete this item?')) {
-    materialItems = materialItems.filter(item => item.id !== itemId);
+    const index = materialItems.findIndex(item => item.id === itemId);
+    if (index !== -1) {
+      materialItems.splice(index, 1);
+      saveToLocalStorage();
+      renderMaterials();
+      updateItemCounts();
+    }
+  }
+}
+
+function toggleComplete(itemId) {
+  const item = materialItems.find(item => item.id === itemId);
+  if (item) {
+    item.completed = !item.completed;
     saveToLocalStorage();
     renderMaterials();
     updateItemCounts();
-    console.log('Item deleted:', itemId);
   }
 }
 
 function generateMaterials(itemData) {
   let materials = [];
   
-  // Add ascension materials
   if (itemData.includeAscension) {
-    const ascensionMaterials = DEFAULT_MATERIALS.ascension[itemData.type][itemData.rarity];
-    materials = materials.concat(JSON.parse(JSON.stringify(ascensionMaterials)));
+    const template = DEFAULT_MATERIALS.ascension[itemData.type];
+    if (template && template[itemData.rarity]) {
+      materials = materials.concat(JSON.parse(JSON.stringify(template[itemData.rarity])));
+    }
   }
   
-  // Add talent materials (only for characters)
   if (itemData.includeTalent && itemData.type === 'character') {
-    const talentMaterials = JSON.parse(JSON.stringify(DEFAULT_MATERIALS.talent));
-    materials = materials.concat(talentMaterials);
+    materials = materials.concat(JSON.parse(JSON.stringify(DEFAULT_MATERIALS.talent)));
   }
   
   return materials;
 }
 
-// Render functions
+// Rendering
 function renderMaterials() {
   const inProgressContainer = document.getElementById('inProgressContainer');
   const completedContainer = document.getElementById('completedContainer');
   
   inProgressContainer.innerHTML = '';
   completedContainer.innerHTML = '';
-
-  const filteredItems = filterItems(materialItems);
+  
+  const filteredItems = materialItems.filter(item => {
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'completed') return item.completed;
+    if (currentFilter === 'in-progress') return !item.completed;
+    if (currentFilter.includes('-')) {
+      const [type, rarity] = currentFilter.split('-');
+      return item.type === type && item.rarity.toString() === rarity;
+    }
+    return item.element === currentFilter;
+  });
   
   filteredItems.forEach(item => {
-    const itemElement = createMaterialItemElement(item);
+    const itemElement = createItemElement(item);
     if (item.completed) {
       completedContainer.appendChild(itemElement);
     } else {
       inProgressContainer.appendChild(itemElement);
     }
   });
-
+  
   updateItemCounts();
 }
 
-function filterItems(items) {
-  return items.filter(item => {
-    if (currentFilter === 'all') return true;
-    if (currentFilter === 'in-progress') return !item.completed;
-    if (currentFilter === 'completed') return item.completed;
-    if (currentFilter === 'character-5') return item.type === 'character' && item.rarity === 5;
-    if (currentFilter === 'character-4') return item.type === 'character' && item.rarity === 4;
-    if (currentFilter === 'weapon-5') return item.type === 'weapon' && item.rarity === 5;
-    if (currentFilter === 'weapon-4') return item.type === 'weapon' && item.rarity === 4;
-    if (['pyro', 'hydro', 'dendro', 'geo', 'cryo', 'anemo', 'electro'].includes(currentFilter)) {
-      return item.element === currentFilter;
-    }
-    return false;
-  });
-}
-
-function createMaterialItemElement(item) {
-  const div = document.createElement('div');
-  div.className = `material-item ${item.completed ? 'completed' : ''}`;
-  div.dataset.itemId = item.id;
-  div.draggable = true;
-
-  const completedMaterials = item.materials.filter(m => m.obtained >= m.required).length;
-  const totalMaterials = item.materials.length;
-  const progressPercentage = totalMaterials > 0 ? Math.round((completedMaterials / totalMaterials) * 100) : 0;
-
-  div.innerHTML = `
-    <div class="drag-handle">⋮⋮</div>
-    
-    <img src="${item.imageUrl}" alt="${item.name}" class="item-image" onerror="this.src='${getDefaultImage(item.type)}'">
-    
+function createItemElement(item) {
+  const element = document.createElement('div');
+  element.className = `material-item ${item.completed ? 'completed' : ''}`;
+  element.dataset.id = item.id;
+  
+  const completionPercentage = calculateCompletionPercentage(item);
+  
+  // Crear tags adicionales para ascension y talent materials
+  let additionalTags = '';
+  if (item.includeAscension) {
+    additionalTags += '<span class="item-tag">Ascension Materials</span>';
+  }
+  if (item.includeTalent) {
+    additionalTags += '<span class="item-tag">Talent Materials</span>';
+  }
+  
+  element.innerHTML = `
+    <div class="drag-handle">::</div>
+    <img src="${item.imageUrl}" alt="${item.name}" class="item-image" />
     <div class="item-content">
       <div class="item-header">
         <div class="item-title">
           <h3 class="item-name ${item.completed ? 'completed' : ''}">${item.name}</h3>
           <div class="level-selectors">
-            <select class="level-select" data-field="currentLevel" data-item-id="${item.id}">
-              ${[1, 20, 40, 50, 60, 70, 80, 90].map(level => 
-                `<option value="${level}" ${level === item.currentLevel ? 'selected' : ''}>${level}</option>`
-              ).join('')}
+            <select class="level-select" data-id="${item.id}" data-field="currentLevel">
+              <option value="1" ${item.currentLevel === 1 ? 'selected' : ''}>1</option>
+              <option value="20" ${item.currentLevel === 20 ? 'selected' : ''}>20</option>
+              <option value="40" ${item.currentLevel === 40 ? 'selected' : ''}>40</option>
+              <option value="50" ${item.currentLevel === 50 ? 'selected' : ''}>50</option>
+              <option value="60" ${item.currentLevel === 60 ? 'selected' : ''}>60</option>
+              <option value="70" ${item.currentLevel === 70 ? 'selected' : ''}>70</option>
+              <option value="80" ${item.currentLevel === 80 ? 'selected' : ''}>80</option>
+              <option value="90" ${item.currentLevel === 90 ? 'selected' : ''}>90</option>
             </select>
             <span class="level-arrow">→</span>
-            <select class="level-select" data-field="targetLevel" data-item-id="${item.id}">
-              ${[20, 40, 50, 60, 70, 80, 90].map(level => 
-                `<option value="${level}" ${level === item.targetLevel ? 'selected' : ''}>${level}</option>`
-              ).join('')}
+            <select class="level-select" data-id="${item.id}" data-field="targetLevel">
+              <option value="20" ${item.targetLevel === 20 ? 'selected' : ''}>20</option>
+              <option value="40" ${item.targetLevel === 40 ? 'selected' : ''}>40</option>
+              <option value="50" ${item.targetLevel === 50 ? 'selected' : ''}>50</option>
+              <option value="60" ${item.targetLevel === 60 ? 'selected' : ''}>60</option>
+              <option value="70" ${item.targetLevel === 70 ? 'selected' : ''}>70</option>
+              <option value="80" ${item.targetLevel === 80 ? 'selected' : ''}>80</option>
+              <option value="90" ${item.targetLevel === 90 ? 'selected' : ''}>90</option>
             </select>
           </div>
         </div>
-        
         <div class="item-meta">
           <span class="item-rarity">${'★'.repeat(item.rarity)}</span>
           <span class="item-tag">${capitalizeWords(item.type)}</span>
           ${item.element ? `<span class="item-element">${capitalizeWords(item.element)}</span>` : ''}
-        </div>
-      </div>
-
-      <div class="materials-grid">
-        ${item.materials.map(material => `
-          <div class="material-slot">
-            ${material.image ? `<img src="${material.image}" alt="${material.name}" class="material-image">` : '<div class="material-image"></div>'}
-            <div class="material-name">${material.name}</div>
-            <div class="material-count ${material.obtained >= material.required ? 'complete' : 'incomplete'}">
-              ${material.obtained}/${material.required}
-            </div>
-          </div>
-        `).join('')}
-      </div>
-
-      <div class="item-actions">
-        <div class="completion-controls">
-          <label class="checkbox-label">
-            <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleCompletion(${item.id})">
-            Mark as completed
-          </label>
-          <span class="progress-indicator">${completedMaterials}/${totalMaterials} materials (${progressPercentage}%)</span>
-        </div>
-        
-        <div class="action-buttons">
-          <button class="btn-edit-materials" onclick="showEditMaterialsModal(${item.id})">Edit Materials</button>
-          <button class="btn-edit" onclick="showAddModal(${item.id})">Edit</button>
-          <button class="btn-delete" onclick="deleteItem(${item.id})">🗑️</button>
+          ${additionalTags}
         </div>
       </div>
       
-      ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
+      ${item.materials && item.materials.length > 0 ? `
+        <div class="materials-grid">
+          ${item.materials.map(material => {
+            const isComplete = material.obtained >= material.required;
+            const countClass = isComplete ? 'complete' : 'incomplete';
+            return `
+              <div class="material-slot">
+                <img src="${material.image || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23f1e7e0" width="100" height="100" rx="10"/></svg>'}" alt="${material.name}" class="material-image" />
+                <div class="material-name">${material.name}</div>
+                <div class="material-count ${countClass}">${material.obtained}/${material.required}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      ` : ''}
+      
+      <div class="item-actions">
+        <div class="completion-controls">
+          <label class="checkbox-label">
+            <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleComplete(${item.id})">
+            Mark as completed
+          </label>
+          <span class="completion-percentage">${completionPercentage}% materials (${Math.round(completionPercentage)}%)</span>
+        </div>
+        <div class="action-buttons">
+          <button class="btn-edit" onclick="showAddModal(${item.id})">Edit</button>
+          <button class="btn-edit-materials" onclick="showEditMaterialsModal(${item.id})">Edit Materials</button>
+          <button class="btn-delete" onclick="deleteItem(${item.id})">⌫</button>
+        </div>
+      </div>
     </div>
   `;
+  
+  // Add level selector event listeners
+  element.querySelectorAll('.level-select').forEach(select => {
+    select.addEventListener('change', function() {
+      const itemId = parseInt(this.dataset.id);
+      const field = this.dataset.field;
+      const value = parseInt(this.value);
+      
+      const item = materialItems.find(item => item.id === itemId);
+      if (item) {
+        item[field] = value;
+        saveToLocalStorage();
+      }
+    });
+  });
+  
+  return element;
+}
 
-  return div;
+function calculateCompletionPercentage(item) {
+  if (!item.materials || item.materials.length === 0) return 100;
+  
+  let totalRequired = 0;
+  let totalObtained = 0;
+  
+  item.materials.forEach(material => {
+    totalRequired += material.required;
+    totalObtained += Math.min(material.obtained, material.required);
+  });
+  
+  return totalRequired === 0 ? 100 : Math.round((totalObtained / totalRequired) * 100);
 }
 
 function updateItemCounts() {
   const inProgressCount = materialItems.filter(item => !item.completed).length;
   const completedCount = materialItems.filter(item => item.completed).length;
-
-  const inProgressCountElement = document.getElementById('inProgressCount');
-  const completedCountElement = document.getElementById('completedCount');
-
-  if (inProgressCountElement) {
-    inProgressCountElement.textContent = `${inProgressCount} item${inProgressCount !== 1 ? 's' : ''}`;
-  }
-
-  if (completedCountElement) {
-    completedCountElement.textContent = `${completedCount} item${completedCount !== 1 ? 's' : ''}`;
-  }
+  
+  document.getElementById('inProgressCount').textContent = `${inProgressCount} items`;
+  document.getElementById('completedCount').textContent = `${completedCount} items`;
 }
 
-// Toggle completion
-function toggleCompletion(itemId) {
-  const item = materialItems.find(item => item.id === itemId);
-  if (item) {
-    item.completed = !item.completed;
-    saveToLocalStorage();
-    renderMaterials();
-  }
-}
-
-// Level selectors handling
-document.addEventListener('change', function(e) {
-  if (e.target.matches('.level-select')) {
-    const itemId = parseInt(e.target.dataset.itemId);
-    const field = e.target.dataset.field;
-    const value = parseInt(e.target.value);
-    
-    const item = materialItems.find(item => item.id === itemId);
-    if (item) {
-      item[field] = value;
-      
-      // Ensure currentLevel doesn't exceed targetLevel
-      if (field === 'currentLevel' && value >= item.targetLevel) {
-        item.targetLevel = value === 90 ? 90 : value + 10;
-        renderMaterials(); // Re-render to update target level selector
-      } else if (field === 'targetLevel' && value <= item.currentLevel) {
-        item.currentLevel = value === 1 ? 1 : Math.max(1, value - 10);
-        renderMaterials(); // Re-render to update current level selector
+// Drag and drop functionality
+function setupDragAndDrop() {
+  const containers = document.querySelectorAll('.materials-container');
+  
+  containers.forEach(container => {
+    container.addEventListener('dragover', handleDragOver);
+    container.addEventListener('drop', handleDrop);
+  });
+  
+  // Make items draggable
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.drag-handle')) {
+      const item = e.target.closest('.material-item');
+      if (item) {
+        item.draggable = true;
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
       }
+    }
+  });
+}
+
+function handleDragStart(e) {
+  draggedElement = this;
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', this.outerHTML);
+}
+
+function handleDragEnd(e) {
+  this.classList.remove('dragging');
+  draggedElement = null;
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  
+  if (draggedElement) {
+    const itemId = parseInt(draggedElement.dataset.id);
+    const item = materialItems.find(item => item.id === itemId);
+    
+    if (item) {
+      const isCompletedContainer = e.currentTarget.id === 'completedContainer';
+      item.completed = isCompletedContainer;
       
       saveToLocalStorage();
+      renderMaterials();
+      updateItemCounts();
     }
   }
-});
+}
 
-// Drag and Drop functionality
-function setupDragAndDrop() {
-  const containers = [
-    document.getElementById('inProgressContainer'),
-    document.getElementById('completedContainer')
-  ];
-
-  containers.forEach(container => {
-    if (!container) return;
-
-    container.addEventListener('dragover', function(e) {
-      e.preventDefault();
-      container.classList.add('drag-over');
-    });
-
-    container.addEventListener('dragleave', function(e) {
-      if (!container.contains(e.relatedTarget)) {
-        container.classList.remove('drag-over');
-      }
-    });
-
-    container.addEventListener('drop', function(e) {
-      e.preventDefault();
-      container.classList.remove('drag-over');
-      
-      if (draggedElement) {
-        const itemId = parseInt(draggedElement.dataset.itemId);
-        const item = materialItems.find(item => item.id === itemId);
-        
-        if (item) {
-          const shouldComplete = container.id === 'completedContainer';
-          if (item.completed !== shouldComplete) {
-            item.completed = shouldComplete;
-            saveToLocalStorage();
-            renderMaterials();
-          }
-        }
-      }
-    });
-  });
-
-  // Setup drag events on material items (will be called after rendering)
-  document.addEventListener('dragstart', function(e) {
-    if (e.target.matches('.material-item')) {
-      draggedElement = e.target;
-      e.target.classList.add('dragging');
-    }
-  });
-
-  document.addEventListener('dragend', function(e) {
-    if (e.target.matches('.material-item')) {
-      e.target.classList.remove('dragging');
-      draggedElement = null;
-      
-      // Remove drag-over class from all containers
-      document.querySelectorAll('.materials-container').forEach(container => {
-        container.classList.remove('drag-over');
-      });
-    }
-  });
+// Search functionality (to be implemented)
+function searchItems(query) {
+  // This will be implemented if needed
+  console.log('Search query:', query);
 }
